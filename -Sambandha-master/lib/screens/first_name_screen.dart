@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:sambandha_app/model/profile_setup_data.dart';
+import 'gender_screen.dart'; // Make sure this import exists
+import '../widgets/next_button.dart';
 
 class FirstNameScreen extends StatefulWidget {
-  const FirstNameScreen({super.key});
+  final ProfileSetupData data;
+
+  const FirstNameScreen({super.key, required this.data});
 
   @override
   State<FirstNameScreen> createState() => _FirstNameScreenState();
@@ -66,8 +71,15 @@ class _FirstNameScreenState extends State<FirstNameScreen> {
                 height: 56,
                 child: ElevatedButton(
                   onPressed: () {
-                    // Replace with your next screen route
-                    Navigator.pushNamed(context, '/next-step');
+                    final updatedData = widget.data;
+                    updatedData.firstName = _nameController.text;
+
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => GenderScreen(data: updatedData),
+                      ),
+                    );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.pinkAccent,
