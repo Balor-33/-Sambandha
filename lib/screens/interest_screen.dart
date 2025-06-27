@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import '../model/profile_setup_data.dart';
 import '../widgets/next_button.dart';
-
+import 'hobbies_screen.dart';
 
 class InterestScreen extends StatefulWidget {
   const InterestScreen({super.key, required this.data});
+
   final ProfileSetupData data;
 
   @override
@@ -14,16 +15,22 @@ class InterestScreen extends StatefulWidget {
 class _InterestScreenState extends State<InterestScreen> {
   String? _interest;
 
-  void _finish() {
+  void _continueToHobbies() {
     if (_interest == null) {
       _error('Pick at least one');
       return;
     }
+
+    // Save the interest selection
     widget.data.interest = _interest;
 
-    // ↓ For now just print; replace with real onboarding completion
-    debugPrint('SETUP DONE → ${widget.data}');
-    Navigator.popUntil(context, (r) => r.isFirst);
+    // Navigate to the hobbies screen
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => HobbiesScreen(data: widget.data),
+      ),
+    );
   }
 
   void _error(String m) =>
@@ -67,7 +74,7 @@ class _InterestScreenState extends State<InterestScreen> {
             _pill('Women'),
             _pill('Men'),
             const Spacer(),
-            NextButton(label: 'NEXT', onPressed: _finish),
+            NextButton(label: 'NEXT', onPressed: _continueToHobbies),
           ],
         ),
       ),

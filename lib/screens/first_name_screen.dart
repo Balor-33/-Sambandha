@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:sambandha_app/model/profile_setup_data.dart';
+import '../model/profile_setup_data.dart';
 import 'gender_screen.dart'; // Make sure this import exists
 import '../widgets/next_button.dart';
 
