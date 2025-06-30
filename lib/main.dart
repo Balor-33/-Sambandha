@@ -1,5 +1,6 @@
 // lib/main.dart
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:google_fonts/google_fonts.dart'; // <-- added this line
 
 import 'model/profile_setup_data.dart';
@@ -9,7 +10,12 @@ import 'screens/gender_screen.dart';
 import 'screens/birthday_screen.dart';
 import 'screens/interest_screen.dart';
 
-void main() => runApp(const MyApp());
+void main() async {
+  WidgetsFlutterBinding
+      .ensureInitialized(); //  Needed before any async plugin init
+  await Firebase.initializeApp(); // Async Firebase setup
+  runApp(const MyApp());
+}
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "722644529966",
+    "project_id": "sambandha-b7e04",
+    "storage_bucket": "sambandha-b7e04.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:722644529966:android:fe4b9b4cf19afa470280bf",
+        "android_client_info": {
+          "package_name": "com.example.sambandha"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBwEwuoQ1dFPm5sCAavGvtSsXemCy9TFbQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
