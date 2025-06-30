@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../model/profile_setup_data.dart';
 
@@ -10,16 +11,56 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
+  final _passwordController =
+      TextEditingController(); // Added password controller
   final _formKey = GlobalKey<FormState>();
+  bool _loading = false;
+  String? _error;
 
-  void _continue() {
+  Future<void> _continue() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // 🚀 Jump into the first-name step and start a fresh profile object
-    Navigator.pushReplacementNamed(
-      context,
-      '/first-name',
-      arguments: ProfileSetupData(),
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    try {
+      // Sign in with email and password
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+
+      // Navigate to next page on success
+      Navigator.pushReplacementNamed(
+        context,
+        '/first-name',
+        arguments: ProfileSetupData(),
+      );
+    } on FirebaseAuthException catch (e) {
+      setState(() {
+        _error = e.message;
+      });
+    } catch (e) {
+      setState(() {
+        _error = 'An unexpected error occurred';
+      });
+    } finally {
+      setState(() {
+        _loading = false;
+      });
+    }
+  }
+
+  Widget _errorMessage() {
+    if (_error == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Text(
+        _error!,
+        style: const TextStyle(color: Colors.red),
+      ),
     );
   }
 
@@ -88,10 +129,39 @@ class _LoginPageState extends State<LoginPage> {
                       if (text.isEmpty) return 'Email can’t be empty';
                       final emailRegex =
                           RegExp(r'^[\w\.-]+@[\w\.-]+\.\w+$'); // simple check
-                      if (!emailRegex.hasMatch(text)) return 'Enter a valid email';
+                      if (!emailRegex.hasMatch(text))
+                        return 'Enter a valid email';
                       return null;
                     },
                   ),
+
+                  const SizedBox(height: 16),
+
+                  /// PASSWORD FIELD with validation
+                  TextFormField(
+                    controller: _passwordController,
+                    obscureText: true,
+                    decoration: InputDecoration(
+                      hintText: 'Password',
+                      prefixIcon:
+                          Icon(Icons.lock_outline, color: Colors.grey[400]),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 16),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Password can’t be empty';
+                      }
+                      if (value.length < 6) {
+                        return 'Password must be at least 6 characters';
+                      }
+                      return null;
+                    },
+                  ),
+
+                  _errorMessage(),
 
                   const SizedBox(height: 24),
 
@@ -100,16 +170,20 @@ class _LoginPageState extends State<LoginPage> {
                     width: double.infinity,
                     height: 56,
                     child: ElevatedButton(
-                      onPressed: _continue,
+                      onPressed: _loading ? null : _continue,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.black,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12)),
                       ),
-                      child: const Text('Continue',
-                          style: TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.w600)),
+                      child: _loading
+                          ? const CircularProgressIndicator(
+                              color: Colors.white,
+                            )
+                          : const Text('Continue',
+                              style: TextStyle(
+                                  fontSize: 16, fontWeight: FontWeight.w600)),
                     ),
                   ),
 
@@ -119,7 +193,8 @@ class _LoginPageState extends State<LoginPage> {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Text('or',
-                          style: TextStyle(color: Colors.grey[500], fontSize: 14)),
+                          style:
+                              TextStyle(color: Colors.grey[500], fontSize: 14)),
                     ),
                     Expanded(child: Divider(color: Colors.grey[300])),
                   ]),
@@ -186,6 +261,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   void dispose() {
     _emailController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 }
