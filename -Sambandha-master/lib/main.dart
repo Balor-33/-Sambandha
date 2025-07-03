@@ -9,8 +9,14 @@ import 'screens/gender_screen.dart';
 import 'screens/birthday_screen.dart';
 import 'screens/interest_screen.dart';
 
-void main() => runApp(const MyApp());
 
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp();
+
+  runApp(const MyApp());
+}
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
