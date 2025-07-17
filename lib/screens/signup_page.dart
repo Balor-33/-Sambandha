@@ -373,8 +373,33 @@ class _PasswordSetupPageState extends State<PasswordSetupPage> {
     );
   }
 
-  bool _hasLettersAndNumbers(String password) {
-    return RegExp(r'^(?=.[a-zA-Z])(?=.[0-9])').hasMatch(password);
+  // Enhanced password validation methods
+  bool _hasMinLength(String password) {
+    return password.length >= 8;
+  }
+
+  bool _hasUppercase(String password) {
+    return RegExp(r'[A-Z]').hasMatch(password);
+  }
+
+  bool _hasLowercase(String password) {
+    return RegExp(r'[a-z]').hasMatch(password);
+  }
+
+  bool _hasNumber(String password) {
+    return RegExp(r'[0-9]').hasMatch(password);
+  }
+
+  bool _hasSpecialChar(String password) {
+    return RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(password);
+  }
+
+  bool _isPasswordValid(String password) {
+    return _hasMinLength(password) &&
+        _hasUppercase(password) &&
+        _hasLowercase(password) &&
+        _hasNumber(password) &&
+        _hasSpecialChar(password);
   }
 
   @override
@@ -456,8 +481,8 @@ class _PasswordSetupPageState extends State<PasswordSetupPage> {
                       if (value == null || value.isEmpty) {
                         return 'Password can\'t be empty';
                       }
-                      if (value.length < 6) {
-                        return 'Password must be at least 6 characters';
+                      if (!_isPasswordValid(value)) {
+                        return 'Password must meet all requirements';
                       }
                       return null;
                     },
@@ -512,25 +537,50 @@ class _PasswordSetupPageState extends State<PasswordSetupPage> {
                     },
                   ),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
 
-                  /// PASSWORD REQUIREMENTS
-                  Text(
-                    'Password requirements:',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.grey[700],
+                  /// ENHANCED PASSWORD REQUIREMENTS
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[50],
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey[200]!),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  _buildPasswordRequirement(
-                    'At least 6 characters',
-                    _passwordController.text.length >= 6,
-                  ),
-                  _buildPasswordRequirement(
-                    'Contains letters and numbers',
-                    _hasLettersAndNumbers(_passwordController.text),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Password requirements:',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildPasswordRequirement(
+                          'At least 8 characters',
+                          _hasMinLength(_passwordController.text),
+                        ),
+                        _buildPasswordRequirement(
+                          'Contains uppercase letter (A-Z)',
+                          _hasUppercase(_passwordController.text),
+                        ),
+                        _buildPasswordRequirement(
+                          'Contains lowercase letter (a-z)',
+                          _hasLowercase(_passwordController.text),
+                        ),
+                        _buildPasswordRequirement(
+                          'Contains number (0-9)',
+                          _hasNumber(_passwordController.text),
+                        ),
+                        _buildPasswordRequirement(
+                          'Contains special character (!@#\$%^&*)',
+                          _hasSpecialChar(_passwordController.text),
+                        ),
+                      ],
+                    ),
                   ),
 
                   _errorMessage(),
