@@ -1,15 +1,18 @@
-//  Required for Firebase plugin management
-pluginManagement {
+buildscript {
+
     repositories {
-        google()
-        gradlePluginPortal()
-        mavenCentral()
+      // Make sure that you have the following two repositories
+      google()  // Google's Maven repository
+      mavenCentral()  // Maven Central repository
+    }
+
+    dependencies {
+
+      // Add the Maven coordinates and latest version of the plugin
+       classpath ("com.google.gms:google-services:4.4.3")
     }
 }
 
-plugins {
-    id("com.google.gms.google-services") version "4.4.3" apply false
-}
 
 allprojects {
     repositories {
@@ -18,7 +21,6 @@ allprojects {
     }
 }
 
-// Custom build directory logic stays the same
 val newBuildDir: Directory = rootProject.layout.buildDirectory.dir("../../build").get()
 rootProject.layout.buildDirectory.value(newBuildDir)
 
@@ -26,13 +28,10 @@ subprojects {
     val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
     project.layout.buildDirectory.value(newSubprojectBuildDir)
 }
-
-//  Ensures :app is evaluated before other modules
 subprojects {
     project.evaluationDependsOn(":app")
 }
 
-//  Clean task for custom build dir
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }

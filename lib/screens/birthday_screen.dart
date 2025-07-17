@@ -13,17 +13,51 @@ class BirthdayScreen extends StatefulWidget {
 
 class _BirthdayScreenState extends State<BirthdayScreen> {
   DateTime? _date;
+  int? _age; // Store the calculated age
   final _format = DateFormat('dd/MM/yyyy');
 
-  Future<void> _pick() async {
+  // Function to calculate age from birthdate
+  int calculateAge(DateTime birthDate) {
     final now = DateTime.now();
+    int age = now.year - birthDate.year;
+
+    // Check if birthday hasn't occurred this year yet
+    if (now.month < birthDate.month ||
+        (now.month == birthDate.month && now.day < birthDate.day)) {
+      age--;
+    }
+
+    return age;
+  }
+
+  // Function to check if user is 18 or older
+  bool isEligibleAge(DateTime birthDate) {
+    int age = calculateAge(birthDate);
+    return age >= 18;
+  }
+
+  // Function to get minimum allowed birth date (18 years ago)
+  DateTime getMinimumBirthDate() {
+    DateTime currentDate = DateTime.now();
+    return DateTime(currentDate.year - 18, currentDate.month, currentDate.day);
+  }
+
+  Future<void> _pick() async {
+    final minDate = getMinimumBirthDate();
+
     final picked = await showDatePicker(
       context: context,
-      initialDate: DateTime(now.year - 18, now.month, now.day),
+      initialDate: minDate, // Start at minimum eligible date
       firstDate: DateTime(1900),
-      lastDate: now,
+      lastDate: minDate, // Don't allow dates newer than 18 years ago
     );
-    if (picked != null) setState(() => _date = picked);
+
+    if (picked != null) {
+      setState(() {
+        _date = picked;
+        _age = calculateAge(picked); // Store age in variable
+      });
+    }
   }
 
   void _goNext() {
@@ -31,6 +65,13 @@ class _BirthdayScreenState extends State<BirthdayScreen> {
       _error('Please choose your birth date');
       return;
     }
+
+    // Validate age before proceeding (using stored age)
+    if (_age == null || _age! < 18) {
+      _error('You must be 18 or older to proceed');
+      return;
+    }
+
     widget.data.birthDate = _date;
     Navigator.pushNamed(context, '/interest', arguments: widget.data);
   }
@@ -48,8 +89,10 @@ class _BirthdayScreenState extends State<BirthdayScreen> {
           children: [
             const BackButton(),
             const SizedBox(height: 32),
-            const Text('Your b-day?',
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+            const Text(
+              'Your b-day?',
+              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 32),
             GestureDetector(
               onTap: _pick,
@@ -59,8 +102,11 @@ class _BirthdayScreenState extends State<BirthdayScreen> {
                   controller: TextEditingController(
                     text: _date == null ? '' : _format.format(_date!),
                   ),
-                  style:
-                      const TextStyle(fontSize: 28, letterSpacing: 2.0, height: 1),
+                  style: const TextStyle(
+                    fontSize: 28,
+                    letterSpacing: 2.0,
+                    height: 1,
+                  ),
                   decoration: InputDecoration(
                     hintText: '05/05/2004',
                     border: const UnderlineInputBorder(),
@@ -73,6 +119,27 @@ class _BirthdayScreenState extends State<BirthdayScreen> {
               'Your profile shows your age, not your birth date',
               style: TextStyle(fontSize: 13, color: Colors.grey),
             ),
+            // Show age if date is selected
+            if (_date != null && _age != null) ...[
+              const SizedBox(height: 16),
+              Text(
+                'Age: $_age years',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              // Show warning if under 18 (though date picker should prevent this)
+              if (_age! < 18)
+                const Text(
+                  'Must be 18 or older',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.red,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+            ],
             const Spacer(),
             NextButton(label: 'NEXT', onPressed: _goNext),
           ],

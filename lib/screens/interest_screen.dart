@@ -27,9 +27,7 @@ class _InterestScreenState extends State<InterestScreen> {
     // Navigate to the hobbies screen
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => HobbiesScreen(data: widget.data),
-      ),
+      MaterialPageRoute(builder: (context) => HobbiesScreen(data: widget.data)),
     );
   }
 
@@ -49,11 +47,14 @@ class _InterestScreenState extends State<InterestScreen> {
           color: sel ? Colors.black : Colors.white,
           border: Border.all(color: Colors.black, width: 1),
         ),
-        child: Text(label,
-            style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: sel ? Colors.white : Colors.black)),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: sel ? Colors.white : Colors.black,
+          ),
+        ),
       ),
     );
   }
@@ -68,8 +69,10 @@ class _InterestScreenState extends State<InterestScreen> {
           children: [
             const BackButton(),
             const SizedBox(height: 32),
-            const Text('Who are you\ninterested in seeing?',
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+            const Text(
+              'Who are you\ninterested in seeing?',
+              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 32),
             _pill('Women'),
             _pill('Men'),

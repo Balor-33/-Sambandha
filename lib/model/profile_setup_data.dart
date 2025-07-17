@@ -1,12 +1,14 @@
-// lib/model/profile_setup_data.dart
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class ProfileSetupData {
   String? firstName;
   String? gender; // "Male" | "Female"
   DateTime? birthDate; // stored as DateTime
   String? interest; // "Women" | "Men"
   List<String>? hobbies;
-  int? distancePreference;
   String? relationshipTarget;
+  int? distancePreference;
+  GeoPoint? currentLocation;
 
   ProfileSetupData({
     this.firstName,
@@ -14,6 +16,9 @@ class ProfileSetupData {
     this.birthDate,
     this.interest,
     this.hobbies,
+    this.distancePreference,
+    this.relationshipTarget,
+    this.currentLocation,
   });
 
   // Helper method to get age from birthDate
@@ -30,6 +35,6 @@ class ProfileSetupData {
 
   @override
   String toString() {
-    return 'ProfileSetupData{firstName: $firstName, gender: $gender, birthDate: $birthDate, age: $age, interest: $interest, hobbies: $hobbies, relationshipTarget: $relationshipTarget}';
+    return 'ProfileSetupData{firstName: $firstName, gender: $gender, birthDate: $birthDate, age: $age, interest: $interest, hobbies: $hobbies, distancePreference: $distancePreference, relationshipTarget: $relationshipTarget}';
   }
 }

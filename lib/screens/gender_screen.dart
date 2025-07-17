@@ -38,12 +38,14 @@ class _GenderScreenState extends State<GenderScreen> {
           color: isSel ? Colors.black : Colors.white,
           border: Border.all(color: Colors.black, width: 1),
         ),
-        child: Text('$label $emoji',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: isSel ? Colors.white : Colors.black,
-            )),
+        child: Text(
+          '$label $emoji',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: isSel ? Colors.white : Colors.black,
+          ),
+        ),
       ),
     );
   }
@@ -58,8 +60,10 @@ class _GenderScreenState extends State<GenderScreen> {
           children: [
             const BackButton(),
             const SizedBox(height: 32),
-            const Text('Specify your gender',
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+            const Text(
+              'Specify your gender',
+              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 32),
             _pill('Male', '👨'),
             _pill('Female', '👩'),

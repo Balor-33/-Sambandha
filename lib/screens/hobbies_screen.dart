@@ -88,10 +88,7 @@ class _HobbiesScreenState extends State<HobbiesScreen> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(25),
           color: isSelected ? Colors.black : Colors.white,
-          border: Border.all(
-            color: Colors.grey.shade300,
-            width: 1,
-          ),
+          border: Border.all(color: Colors.grey.shade300, width: 1),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -105,10 +102,7 @@ class _HobbiesScreenState extends State<HobbiesScreen> {
               ),
             ),
             const SizedBox(width: 6),
-            Text(
-              emoji,
-              style: const TextStyle(fontSize: 16),
-            ),
+            Text(emoji, style: const TextStyle(fontSize: 16)),
           ],
         ),
       ),
@@ -128,8 +122,11 @@ class _HobbiesScreenState extends State<HobbiesScreen> {
               // Back button
               IconButton(
                 onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.arrow_back_ios,
-                    size: 24, color: Colors.black),
+                icon: const Icon(
+                  Icons.arrow_back_ios,
+                  size: 24,
+                  color: Colors.black,
+                ),
                 padding: EdgeInsets.zero,
                 alignment: Alignment.centerLeft,
               ),
@@ -163,10 +160,7 @@ class _HobbiesScreenState extends State<HobbiesScreen> {
                   ),
                   Text(
                     'at least five',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey.shade600,
-                    ),
+                    style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
                   ),
                 ],
               ),
@@ -178,10 +172,10 @@ class _HobbiesScreenState extends State<HobbiesScreen> {
                 child: SingleChildScrollView(
                   child: Wrap(
                     children: _hobbies
-                        .map((hobby) => _buildHobbyPill(
-                              hobby['label']!,
-                              hobby['emoji']!,
-                            ))
+                        .map(
+                          (hobby) =>
+                              _buildHobbyPill(hobby['label']!, hobby['emoji']!),
+                        )
                         .toList(),
                   ),
                 ),
@@ -190,10 +184,7 @@ class _HobbiesScreenState extends State<HobbiesScreen> {
               const SizedBox(height: 24),
 
               // Next button
-              NextButton(
-                label: 'NEXT',
-                onPressed: _continueToNext,
-              ),
+              NextButton(label: 'NEXT', onPressed: _continueToNext),
             ],
           ),
         ),

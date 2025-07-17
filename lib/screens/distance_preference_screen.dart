@@ -2,6 +2,35 @@ import 'package:flutter/material.dart';
 import '../model/profile_setup_data.dart';
 import '../widgets/next_button.dart';
 import 'relationship_target_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:location/location.dart';
+
+Future<GeoPoint?> getCurrentGeoPoint() async {
+  Location location = Location();
+
+  // Check if location services are enabled
+  bool serviceEnabled = await location.serviceEnabled();
+  if (!serviceEnabled) {
+    serviceEnabled = await location.requestService();
+    if (!serviceEnabled) return null;
+  }
+
+  // Check for permission
+  PermissionStatus permissionGranted = await location.hasPermission();
+  if (permissionGranted == PermissionStatus.denied) {
+    permissionGranted = await location.requestPermission();
+    if (permissionGranted != PermissionStatus.granted) return null;
+  }
+
+  // Get the location data
+  LocationData locationData = await location.getLocation();
+
+  if (locationData.latitude != null && locationData.longitude != null) {
+    return GeoPoint(locationData.latitude!, locationData.longitude!);
+  } else {
+    return null;
+  }
+}
 
 class DistancePreferenceScreen extends StatefulWidget {
   const DistancePreferenceScreen({super.key, required this.data});
@@ -18,11 +47,22 @@ class _DistancePreferenceScreenState extends State<DistancePreferenceScreen> {
   final double _minDistance = 1.0;
   final double _maxDistance = 100.0;
 
-  void _continueToNext() {
+  void _continueToNext() async {
     // Save distance preference to profile data
     widget.data.distancePreference = _distanceValue.round();
 
-    // Navigate to hobbies screen
+    // Get current location and save to profile data
+    try {
+      final currentLocation = await getCurrentGeoPoint();
+      if (currentLocation != null) {
+        widget.data.currentLocation = currentLocation;
+      }
+    } catch (e) {
+      // If location fails, continue without it
+      print('Failed to get location: $e');
+    }
+
+    // Navigate to relationship target screen
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -44,8 +84,11 @@ class _DistancePreferenceScreenState extends State<DistancePreferenceScreen> {
               // Back button
               IconButton(
                 onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.arrow_back_ios,
-                    size: 24, color: Colors.black),
+                icon: const Icon(
+                  Icons.arrow_back_ios,
+                  size: 24,
+                  color: Colors.black,
+                ),
                 padding: EdgeInsets.zero,
                 alignment: Alignment.centerLeft,
               ),
@@ -149,7 +192,8 @@ class _DistancePreferenceScreenState extends State<DistancePreferenceScreen> {
                     ),
                     children: [
                       const TextSpan(
-                          text: 'You can change preferences\nlater from '),
+                        text: 'You can change preferences\nlater from ',
+                      ),
                       TextSpan(
                         text: 'Settings',
                         style: TextStyle(
@@ -166,10 +210,7 @@ class _DistancePreferenceScreenState extends State<DistancePreferenceScreen> {
               const Spacer(),
 
               // Next button
-              NextButton(
-                label: 'NEXT',
-                onPressed: _continueToNext,
-              ),
+              NextButton(label: 'NEXT', onPressed: _continueToNext),
 
               const SizedBox(height: 16),
             ],

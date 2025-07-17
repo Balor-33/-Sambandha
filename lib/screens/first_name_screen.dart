@@ -38,18 +38,17 @@ class _FirstNameScreenState extends State<FirstNameScreen> {
               const SizedBox(height: 32),
               const Text(
                 "What’s your first name?",
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 24),
               TextField(
                 controller: _nameController,
                 decoration: InputDecoration(
                   hintText: "Enter your name",
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 18,
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),

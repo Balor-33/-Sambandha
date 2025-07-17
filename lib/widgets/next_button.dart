@@ -7,7 +7,8 @@ class NextButton extends StatelessWidget {
   const NextButton({
     Key? key,
     required this.onPressed,
-    this.text = "NEXT", required String label,
+    this.text = "NEXT",
+    required String label,
   }) : super(key: key);
 
   @override
