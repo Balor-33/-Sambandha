@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'signup_page.dart';
+import '../services/firebase_auth.dart';
 
 class WelcomePage extends StatelessWidget {
   const WelcomePage({super.key});
@@ -147,7 +148,7 @@ class WelcomePage extends StatelessWidget {
   }
 
   Widget _link(String text) => GestureDetector(
-    onTap: () {}, // TODO: open WebView or external link
+    onTap: () {},
     child: Text(
       text,
       style: TextStyle(
@@ -159,7 +160,6 @@ class WelcomePage extends StatelessWidget {
   );
 }
 
-// Login Page
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -174,6 +174,7 @@ class _LoginPageState extends State<LoginPage> {
   bool _loading = false;
   String? _error;
   bool _obscurePassword = true;
+  final FirebaseAuthService _authService = FirebaseAuthService();
 
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
@@ -184,18 +185,15 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
-      UserCredential userCredential = await FirebaseAuth.instance
+      UserCredential userCredential = await _authService
           .signInWithEmailAndPassword(
             email: _emailController.text.trim(),
             password: _passwordController.text,
           );
 
-      // Check if email is verified
       if (userCredential.user?.emailVerified == true) {
-        // Navigate to main app
         Navigator.pushReplacementNamed(context, '/home');
       } else {
-        // Navigate to email verification page
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -445,7 +443,6 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 24),
 
-                  /// GOOGLE BUTTON
                   const Spacer(),
 
                   /// SIGN UP LINK
@@ -500,7 +497,6 @@ class _LoginPageState extends State<LoginPage> {
   }
 }
 
-// Forgot Password Page
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
 
@@ -514,6 +510,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   bool _loading = false;
   String? _error;
   bool _emailSent = false;
+  final FirebaseAuthService _authService = FirebaseAuthService();
 
   Future<void> _sendPasswordReset() async {
     if (!_formKey.currentState!.validate()) return;
@@ -524,9 +521,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     });
 
     try {
-      await FirebaseAuth.instance.sendPasswordResetEmail(
-        email: _emailController.text.trim(),
-      );
+      await _authService.sendPasswordResetEmail(_emailController.text.trim());
 
       setState(() {
         _emailSent = true;

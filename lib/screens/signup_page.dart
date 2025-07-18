@@ -1,8 +1,8 @@
+import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'dart:async';
+import '../services/firebase_auth.dart';
 
-// Step 1: Email Entry Page (using your UI design)
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
 
@@ -15,6 +15,7 @@ class _SignupPageState extends State<SignupPage> {
   final _formKey = GlobalKey<FormState>();
   bool _loading = false;
   String? _error;
+  final FirebaseAuthService _authService = FirebaseAuthService();
 
   Future<void> _continue() async {
     if (!_formKey.currentState!.validate()) return;
@@ -25,9 +26,9 @@ class _SignupPageState extends State<SignupPage> {
     });
 
     try {
-      // Check if email already exists by trying to fetch sign-in methods
-      final signInMethods = await FirebaseAuth.instance
-          .fetchSignInMethodsForEmail(_emailController.text.trim());
+      final signInMethods = await _authService.checkEmailExists(
+        _emailController.text.trim(),
+      );
 
       if (signInMethods.isNotEmpty) {
         setState(() {
@@ -37,7 +38,6 @@ class _SignupPageState extends State<SignupPage> {
         return;
       }
 
-      // Navigate to password setup page
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -117,7 +117,7 @@ class _SignupPageState extends State<SignupPage> {
                   ),
                   const SizedBox(height: 40),
 
-                  /// EMAIL FIELD with validation
+                  /// EMAIL FIELD
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
@@ -193,12 +193,12 @@ class _SignupPageState extends State<SignupPage> {
                   ),
                   const SizedBox(height: 24),
 
-                  /// GOOGLE BUTTON (local logo)
+                  /// GOOGLE BUTTON
                   SizedBox(
                     width: double.infinity,
                     height: 56,
                     child: OutlinedButton(
-                      onPressed: () {}, // TODO: integrate Google Sign-In
+                      onPressed: () {},
                       style: OutlinedButton.styleFrom(
                         side: BorderSide(color: Colors.grey[300]!),
                         shape: RoundedRectangleBorder(
@@ -248,7 +248,7 @@ class _SignupPageState extends State<SignupPage> {
   }
 
   Widget _link(String text) => GestureDetector(
-    onTap: () {}, // TODO: open WebView or external link
+    onTap: () {},
     child: Text(
       text,
       style: TextStyle(
@@ -266,7 +266,6 @@ class _SignupPageState extends State<SignupPage> {
   }
 }
 
-// Step 2: Password Setup Page (using your UI design)
 class PasswordSetupPage extends StatefulWidget {
   final String email;
 
@@ -284,6 +283,7 @@ class _PasswordSetupPageState extends State<PasswordSetupPage> {
   String? _error;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  final FirebaseAuthService _authService = FirebaseAuthService();
 
   Future<void> _createAccount() async {
     if (!_formKey.currentState!.validate()) return;
@@ -294,17 +294,14 @@ class _PasswordSetupPageState extends State<PasswordSetupPage> {
     });
 
     try {
-      // Create user with Firebase Auth
-      UserCredential userCredential = await FirebaseAuth.instance
+      UserCredential userCredential = await _authService
           .createUserWithEmailAndPassword(
             email: widget.email,
             password: _passwordController.text,
           );
 
-      // Send email verification
-      await userCredential.user?.sendEmailVerification();
+      await _authService.sendEmailVerification();
 
-      // Navigate to verification page
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -373,34 +370,19 @@ class _PasswordSetupPageState extends State<PasswordSetupPage> {
     );
   }
 
-  // Enhanced password validation methods
-  bool _hasMinLength(String password) {
-    return password.length >= 8;
-  }
+  bool _hasMinLength(String password) => password.length >= 8;
+  bool _hasUppercase(String password) => RegExp(r'[A-Z]').hasMatch(password);
+  bool _hasLowercase(String password) => RegExp(r'[a-z]').hasMatch(password);
+  bool _hasNumber(String password) => RegExp(r'[0-9]').hasMatch(password);
+  bool _hasSpecialChar(String password) =>
+      RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(password);
 
-  bool _hasUppercase(String password) {
-    return RegExp(r'[A-Z]').hasMatch(password);
-  }
-
-  bool _hasLowercase(String password) {
-    return RegExp(r'[a-z]').hasMatch(password);
-  }
-
-  bool _hasNumber(String password) {
-    return RegExp(r'[0-9]').hasMatch(password);
-  }
-
-  bool _hasSpecialChar(String password) {
-    return RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(password);
-  }
-
-  bool _isPasswordValid(String password) {
-    return _hasMinLength(password) &&
-        _hasUppercase(password) &&
-        _hasLowercase(password) &&
-        _hasNumber(password) &&
-        _hasSpecialChar(password);
-  }
+  bool _isPasswordValid(String password) =>
+      _hasMinLength(password) &&
+      _hasUppercase(password) &&
+      _hasLowercase(password) &&
+      _hasNumber(password) &&
+      _hasSpecialChar(password);
 
   @override
   Widget build(BuildContext context) {
@@ -486,11 +468,7 @@ class _PasswordSetupPageState extends State<PasswordSetupPage> {
                       }
                       return null;
                     },
-                    onChanged: (value) {
-                      setState(
-                        () {},
-                      ); // Rebuild to update password requirements
-                    },
+                    onChanged: (value) => setState(() {}),
                   ),
 
                   const SizedBox(height: 16),
@@ -539,7 +517,7 @@ class _PasswordSetupPageState extends State<PasswordSetupPage> {
 
                   const SizedBox(height: 20),
 
-                  /// ENHANCED PASSWORD REQUIREMENTS
+                  /// PASSWORD REQUIREMENTS
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -645,6 +623,7 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
   bool _canResend = false;
   int _resendCountdown = 60;
   Timer? _timer;
+  final FirebaseAuthService _authService = FirebaseAuthService();
 
   @override
   void initState() {
@@ -679,13 +658,12 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
     });
 
     try {
-      await FirebaseAuth.instance.currentUser?.reload();
-      User? user = FirebaseAuth.instance.currentUser;
+      await _authService.reloadUser();
+      User? user = _authService.currentUser;
 
       if (user != null && user.emailVerified) {
         Navigator.pushReplacementNamed(context, '/first-name');
       } else {
-        // Email not verified yet
         setState(() {
           _error = 'Please verify your email first';
         });
@@ -703,7 +681,7 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
 
   void _resendVerification() async {
     try {
-      await FirebaseAuth.instance.currentUser?.sendEmailVerification();
+      await _authService.sendEmailVerification();
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
