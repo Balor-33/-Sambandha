@@ -139,8 +139,9 @@ class _SignupPageState extends State<SignupPage> {
                       final text = value?.trim() ?? '';
                       if (text.isEmpty) return 'Email can\'t be empty';
                       final emailRegex = RegExp(r'^[\w\.-]+@[\w\.-]+\.\w+$');
-                      if (!emailRegex.hasMatch(text))
+                      if (!emailRegex.hasMatch(text)) {
                         return 'Enter a valid email';
+                      }
                       return null;
                     },
                   ),
@@ -194,38 +195,6 @@ class _SignupPageState extends State<SignupPage> {
                   const SizedBox(height: 24),
 
                   /// GOOGLE BUTTON
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: OutlinedButton(
-                      onPressed: () {},
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: Colors.grey[300]!),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Image.asset(
-                            'assets/images/g-logo.png',
-                            height: 20,
-                            width: 20,
-                          ),
-                          const SizedBox(width: 12),
-                          const Text(
-                            'Continue with Google',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
                   const Spacer(),
                   Padding(
                     padding: const EdgeInsets.only(bottom: 40, top: 20),
