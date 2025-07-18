@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -111,12 +112,15 @@ class _ProfilePageState extends State<ProfilePage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           title: const Text('Select Image Source'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: const Icon(Icons.camera_alt),
+                leading: const Icon(Icons.camera_alt, color: Color(0xFFE94057)),
                 title: const Text('Camera'),
                 onTap: () {
                   Navigator.pop(context);
@@ -124,7 +128,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.photo_library),
+                leading: const Icon(Icons.photo_library, color: Color(0xFFE94057)),
                 title: const Text('Gallery'),
                 onTap: () {
                   Navigator.pop(context);
@@ -230,35 +234,6 @@ class _ProfilePageState extends State<ProfilePage> {
   }
   
   // Remove profile picture (now from user_interests collection)
-  Future<void> _removeProfilePicture() async {
-    if (currentUser == null) return;
-    
-    try {
-      setState(() => _isUploading = true);
-      
-      // Remove from user_interests collection
-      await FirebaseFirestore.instance
-          .collection(USER_INTERESTS_COLLECTION)
-          .doc(currentUser!.uid)
-          .update({
-        'profilePicture': FieldValue.delete(),
-        'profilePictureUpdatedAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-      
-      setState(() {
-        _imageFile = null;
-        _base64Image = null;
-      });
-      
-      _showSuccessSnackbar('Profile picture removed successfully!');
-      
-    } catch (e) {
-      _showErrorSnackbar('Error removing profile picture: $e');
-    } finally {
-      setState(() => _isUploading = false);
-    }
-  }
   
   // Create basic user profile if it doesn't exist
   Future<void> _ensureUserProfileExists() async {
@@ -306,7 +281,7 @@ class _ProfilePageState extends State<ProfilePage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: Colors.green,
+        backgroundColor: const Color(0xFFE94057),
         duration: const Duration(seconds: 3),
       ),
     );
@@ -334,167 +309,187 @@ class _ProfilePageState extends State<ProfilePage> {
         fit: BoxFit.cover,
       );
     } else {
-      return const Icon(Icons.person, size: 100, color: Colors.grey);
+      return Container(
+        width: 200,
+        height: 200,
+        decoration: const BoxDecoration(
+          color: Color(0xFFE8E8E8),
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(
+          Icons.person,
+          size: 80,
+          color: Color(0xFFBDBDBD),
+        ),
+      );
     }
   }
   
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Setup Profile Picture'),
-        backgroundColor: Colors.blue,
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.white,
         elevation: 0,
-        actions: [
-          // Add a home icon to navigate to homepage
-          IconButton(
-            icon: const Icon(Icons.home),
-            onPressed: _navigateToHomepage,
-            tooltip: 'Go to Homepage',
-          ),
-        ],
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        systemOverlayStyle: const SystemUiOverlayStyle(
+          statusBarBrightness: Brightness.light,
+        ),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  const SizedBox(height: 20),
-                  
-                  // Profile picture display
-                  Center(
-                    child: Container(
-                      width: 220,
-                      height: 220,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.grey, width: 2),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 10,
-                            offset: const Offset(0, 5),
+          ? const Center(child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE94057)),
+            ))
+          : SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 20),
+                    
+                    // Title
+                    const Text(
+                      'Add your profile\npicture',
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                        height: 1.2,
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 16),
+                    
+                    // Subtitle
+                    const Text(
+                      '"Every face tells a story, let yours begin with the love you deserve."',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey,
+                        height: 1.4,
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 60),
+                    
+                    // Profile picture section
+                    Center(
+                      child: Stack(
+                        children: [
+                          // Profile picture container
+                          Container(
+                            width: 200,
+                            height: 200,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: const Color(0xFFE8E8E8),
+                                width: 2,
+                              ),
+                            ),
+                            child: ClipOval(
+                              child: _getImageWidget(),
+                            ),
+                          ),
+                          
+                          // Add button
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: GestureDetector(
+                              onTap: _isUploading ? null : _showImageSourceDialog,
+                              child: Container(
+                                width: 56,
+                                height: 56,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFE94057),
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black12,
+                                      blurRadius: 8,
+                                      offset: Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: const Icon(
+                                  Icons.add,
+                                  color: Colors.white,
+                                  size: 24,
+                                ),
+                              ),
+                            ),
                           ),
                         ],
                       ),
-                      child: ClipOval(
-                        child: _getImageWidget(),
-                      ),
                     ),
-                  ),
-                  
-                  const SizedBox(height: 30),
-                  
-                  // Instructions
-                  Text(
-                    'Choose your profile picture',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey[800],
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 10),
-                  
-                  Text(
-                    'This will be stored securely in your account',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey[600],
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  
-                  const SizedBox(height: 40),
-                  
-                  // Buttons
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      // Pick Image Button
-                      ElevatedButton.icon(
-                        onPressed: _isUploading ? null : _showImageSourceDialog,
-                        icon: const Icon(Icons.add_a_photo),
-                        label: const Text('Pick Image'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    
+                    const SizedBox(height: 40),
+                    
+                    // Settings text
+                    const Center(
+                      child: Text(
+                        'You can always change it\nlater from the Settings.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey,
+                          height: 1.4,
                         ),
                       ),
-                      
-                      // Remove Image Button
-                      if (_base64Image != null)
-                        ElevatedButton.icon(
-                          onPressed: _isUploading ? null : _removeProfilePicture,
-                          icon: const Icon(Icons.delete),
-                          label: const Text('Remove'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                          ),
-                        ),
-                    ],
-                  ),
-                  
-                  const SizedBox(height: 30),
-                  
-                  // Upload Button
-                  if (_base64Image != null)
-                    SizedBox(
+                    ),
+                    
+                    const Spacer(),
+                    
+                    // Finish button
+                    Container(
                       width: double.infinity,
+                      height: 56,
+                      margin: const EdgeInsets.only(bottom: 40),
                       child: ElevatedButton(
                         onPressed: _isUploading ? null : () async {
-                          // Ensure user profile exists before uploading
-                          await _ensureUserProfileExists();
-                          await _uploadProfilePicture();
+                          if (_base64Image != null) {
+                            await _ensureUserProfileExists();
+                            await _uploadProfilePicture();
+                          } else {
+                            await _ensureUserProfileExists();
+                            _navigateToHomepage();
+                          }
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
+                          backgroundColor: const Color(0xFFE94057),
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 15),
+                          elevation: 0,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(28),
                           ),
                         ),
                         child: _isUploading
-                            ? const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                    ),
-                                  ),
-                                  SizedBox(width: 10),
-                                  Text('Uploading...'),
-                                ],
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
                               )
                             : const Text(
-                                'Save Profile Picture',
-                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                'FINISH',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1.2,
+                                ),
                               ),
                       ),
                     ),
-                  
-                  const SizedBox(height: 20),
-                  
-                  // Skip Button
-                  TextButton(
-                    onPressed: _isUploading ? null : () async {
-                      // Ensure user profile exists even when skipping
-                      await _ensureUserProfileExists();
-                      _navigateToHomepage();
-                    },
-                    child: const Text('Skip for now'),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
     );
