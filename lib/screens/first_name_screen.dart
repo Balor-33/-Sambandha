@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../model/profile_setup_data.dart';
 import 'gender_screen.dart'; // Make sure this import exists
-import '../widgets/next_button.dart';
 
 class FirstNameScreen extends StatefulWidget {
   final ProfileSetupData data;
