@@ -36,6 +36,7 @@ class FirebaseUserService {
     required String targetRelation,
     GeoPoint? location,
     int? distancePreference,
+    String? aboutMe, // Added aboutMe parameter
     Map<String, dynamic>? additionalFields,
   }) async {
     try {
@@ -58,6 +59,7 @@ class FirebaseUserService {
         'location': location,
         'distancePreference': distancePreference,
         'name': name,
+        'aboutMe': aboutMe, // Added aboutMe field
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
         ...?additionalFields, // Spread additional fields if provided
@@ -84,6 +86,7 @@ class FirebaseUserService {
     int? distancePreference,
     String? occupation,
     String? bio,
+    String? aboutMe, // Added aboutMe parameter
     List<String>? languages,
     Map<String, dynamic>? additionalFields,
   }) async {
@@ -112,6 +115,7 @@ class FirebaseUserService {
         updateData['distancePreference'] = distancePreference;
       if (name != null) updateData['name'] = name;
       if (bio != null) updateData['bio'] = bio;
+      if (aboutMe != null) updateData['aboutMe'] = aboutMe; // Added aboutMe handling
       if (languages != null) updateData['languages'] = languages;
       if (additionalFields != null) updateData.addAll(additionalFields);
 
@@ -446,6 +450,7 @@ class UserInterests {
   final GeoPoint? location;
   final int? distancePreference;
   final String? name;
+  final String? aboutMe; // Added aboutMe field
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final Map<String, dynamic>? additionalFields;
@@ -461,6 +466,7 @@ class UserInterests {
     this.location,
     this.distancePreference,
     required this.name,
+    this.aboutMe, // Added aboutMe parameter
     this.createdAt,
     this.updatedAt,
     this.additionalFields,
@@ -480,6 +486,7 @@ class UserInterests {
       location: map['location'] as GeoPoint?,
       distancePreference: map['distancePreference'] as int?,
       name: map['name'],
+      aboutMe: map['aboutMe'], // Added aboutMe mapping
       createdAt: map['createdAt'] != null
           ? (map['createdAt'] as Timestamp).toDate()
           : null,
@@ -514,6 +521,7 @@ class UserInterests {
       'location': location,
       'distancePreference': distancePreference,
       'name': name,
+      'aboutMe': aboutMe, // Added aboutMe to map
       'createdAt': createdAt != null ? Timestamp.fromDate(createdAt!) : null,
       'updatedAt': updatedAt != null ? Timestamp.fromDate(updatedAt!) : null,
       'additionalFields': additionalFields,
