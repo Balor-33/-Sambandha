@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../screens/homepage.dart';
+import 'package:sambandha/screens/profilepage.dart';
 import '../services/firebase_user_service.dart';
 import '../model/profile_setup_data.dart';
 import '../widgets/next_button.dart';
@@ -64,7 +64,7 @@ class _RelationshipTargetScreenState extends State<RelationshipTargetScreen> {
 
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const Homepage()),
+        MaterialPageRoute(builder: (context) => const ProfilePage()),
       );
     } catch (e) {
       _showError('Failed to save profile: ${e.toString()}');

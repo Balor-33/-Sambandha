@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'signup_page.dart';
 import '../services/firebase_auth.dart';
+import 'homepage.dart';
 
 class WelcomePage extends StatelessWidget {
   const WelcomePage({super.key});
@@ -192,7 +193,10 @@ class _LoginPageState extends State<LoginPage> {
           );
 
       if (userCredential.user?.emailVerified == true) {
-        Navigator.pushReplacementNamed(context, '/home');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const Homepage()),
+        );
       } else {
         Navigator.pushReplacement(
           context,

@@ -41,6 +41,7 @@ dependencies:
   cloud_firestore: ^5.6.11
   location: ^5.0.0
   permission_handler: ^11.0.0
+  image_picker: ^1.0.4
 
 dev_dependencies:
   flutter_test:
