@@ -263,6 +263,11 @@ class _PasswordSetupPageState extends State<PasswordSetupPage> {
     });
 
     try {
+      UserCredential userCredential = await _authService
+          .createUserWithEmailAndPassword(
+            email: widget.email,
+            password: _passwordController.text,
+          );
 
       await _authService.sendEmailVerification();
 
