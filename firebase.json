@@ -1,0 +1,29 @@
+{
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "sambandha-d9081",
+          "appId": "1:897046943368:android:d854f67e8a345713a6713d",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "sambandha-d9081",
+          "configurations": {
+            "android": "1:897046943368:android:d854f67e8a345713a6713d",
+            "ios": "1:897046943368:ios:672af2f7f5dd01fca6713d",
+            "macos": "1:897046943368:ios:672af2f7f5dd01fca6713d",
+            "web": "1:897046943368:web:9cf592a92beeeb78a6713d",
+            "windows": "1:897046943368:web:f951f0b77ec62c22a6713d"
+          }
+        }
+      }
+    }
+  }
+}
