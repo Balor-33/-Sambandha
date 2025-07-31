@@ -156,16 +156,15 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
 
   void _onItemTapped(int index) {
     // Handle profile tab navigation
-    if (index == 3) { // Profile tab index
+    if (index == 3) {
+      // Profile tab index
       Navigator.push(
         context,
-        MaterialPageRoute(
-          builder: (context) => const UpdateProfilePage(),
-        ),
+        MaterialPageRoute(builder: (context) => const UpdateProfilePage()),
       );
       return; // Don't update _selectedIndex, keep user on current tab
     }
-    
+
     setState(() {
       _selectedIndex = index;
     });
@@ -240,6 +239,20 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
     });
   }
 
+  // Navigate to detailed profile page
+  void _openDetailedProfile(RecommendedUser user) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => DetailedProfilePage(
+          user: user,
+          onLike: () => _likeAction(),
+          onPass: () => _passAction(),
+        ),
+      ),
+    );
+  }
+
   // Safely decode base64 image
   Widget _buildProfileImage(String? base64Image) {
     if (base64Image == null || base64Image.isEmpty) {
@@ -292,6 +305,52 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
         ),
       );
     }
+  }
+
+  // Build simple about me section with "Read more" button
+  Widget _buildAboutMeSection(RecommendedUser user) {
+    if (user.aboutMe == null || user.aboutMe!.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final aboutMeText = user.aboutMe!;
+    final isLongText = aboutMeText.length > 100;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            aboutMeText,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
+              height: 1.4,
+            ),
+          ),
+          if (isLongText)
+            GestureDetector(
+              onTap: () => _openDetailedProfile(user),
+              child: Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  'Read more',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.9),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -557,119 +616,100 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
                 position: _slideAnimation,
                 child: ScaleTransition(
                   scale: _scaleAnimation,
-                  child: Container(
-                    width: double.infinity,
-                    height: MediaQuery.of(context).size.height * 0.65,
-                    margin: const EdgeInsets.symmetric(vertical: 20),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.15),
-                          blurRadius: 30,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(24),
-                      child: Stack(
-                        children: [
-                          // Background Image or Profile Picture
-                          _buildProfileImage(currentUser.profilePicture),
+                  child: GestureDetector(
+                    onTap: () => _openDetailedProfile(currentUser),
+                    child: Container(
+                      width: double.infinity,
+                      height: MediaQuery.of(context).size.height * 0.65,
+                      margin: const EdgeInsets.symmetric(vertical: 20),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.15),
+                            blurRadius: 30,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(24),
+                        child: Stack(
+                          children: [
+                            // Background Image or Profile Picture
+                            _buildProfileImage(currentUser.profilePicture),
 
-                          // Flash overlay
-                          if (_isFlashing)
-                            AnimatedBuilder(
-                              animation: _flashAnimation,
-                              builder: (context, child) {
-                                return Container(
-                                  decoration: BoxDecoration(
-                                    color: _flashColor.withOpacity(
-                                      _flashAnimation.value,
+                            // Flash overlay
+                            if (_isFlashing)
+                              AnimatedBuilder(
+                                animation: _flashAnimation,
+                                builder: (context, child) {
+                                  return Container(
+                                    decoration: BoxDecoration(
+                                      color: _flashColor.withOpacity(
+                                        _flashAnimation.value,
+                                      ),
                                     ),
-                                  ),
-                                );
-                              },
-                            ),
-
-                          // Profile Info Overlay
-                          Positioned(
-                            bottom: 0,
-                            left: 0,
-                            right: 0,
-                            child: Container(
-                              padding: const EdgeInsets.all(24),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  colors: [
-                                    Colors.transparent,
-                                    Colors.black.withOpacity(0.8),
-                                  ],
-                                ),
+                                  );
+                                },
                               ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          currentUser.name,
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 32,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        '${currentUser.age}',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 28,
-                                          fontWeight: FontWeight.w300,
-                                        ),
-                                      ),
+
+                            // Profile Info Overlay
+                            Positioned(
+                              bottom: 0,
+                              left: 0,
+                              right: 0,
+                              child: Container(
+                                padding: const EdgeInsets.all(24),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      Colors.transparent,
+                                      Colors.black.withOpacity(0.8),
                                     ],
                                   ),
-                                  const SizedBox(height: 8),
-                                  if (currentUser.targetRelation.isNotEmpty)
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
                                     Row(
                                       children: [
-                                        const Icon(
-                                          Icons.favorite_outline,
-                                          color: Colors.white70,
-                                          size: 18,
+                                        Expanded(
+                                          child: Text(
+                                            currentUser.name,
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 32,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
                                         ),
-                                        const SizedBox(width: 6),
+                                        const SizedBox(width: 8),
                                         Text(
-                                          currentUser.targetRelation,
+                                          '${currentUser.age}',
                                           style: const TextStyle(
-                                            color: Colors.white70,
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w400,
+                                            color: Colors.white,
+                                            fontSize: 28,
+                                            fontWeight: FontWeight.w300,
                                           ),
                                         ),
                                       ],
                                     ),
-                                  if (currentUser.distanceKm != null)
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 4),
-                                      child: Row(
+                                    const SizedBox(height: 8),
+                                    if (currentUser.targetRelation.isNotEmpty)
+                                      Row(
                                         children: [
                                           const Icon(
-                                            Icons.location_on_outlined,
+                                            Icons.favorite_outline,
                                             color: Colors.white70,
                                             size: 18,
                                           ),
                                           const SizedBox(width: 6),
                                           Text(
-                                            '${currentUser.distanceKm!.toStringAsFixed(1)} km away',
+                                            currentUser.targetRelation,
                                             style: const TextStyle(
                                               color: Colors.white70,
                                               fontSize: 16,
@@ -678,64 +718,110 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
                                           ),
                                         ],
                                       ),
-                                    ),
-                                  if (currentUser.aboutMe != null &&
-                                      currentUser.aboutMe!.isNotEmpty)
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 8),
-                                      child: Text(
-                                        currentUser.aboutMe!,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          color: Colors.white70,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w400,
+                                    if (currentUser.distanceKm != null)
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 4),
+                                        child: Row(
+                                          children: [
+                                            const Icon(
+                                              Icons.location_on_outlined,
+                                              color: Colors.white70,
+                                              size: 18,
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              '${currentUser.distanceKm!.toStringAsFixed(1)} km away',
+                                              style: const TextStyle(
+                                                color: Colors.white70,
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w400,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
-                                    ),
-                                  const SizedBox(height: 16),
-                                  // Hobby tags
-                                  if (currentUser.hobbies.isNotEmpty)
-                                    Wrap(
-                                      spacing: 8,
-                                      runSpacing: 4,
-                                      children: currentUser.hobbies
-                                          .take(3)
-                                          .map((hobby) => _buildTag(hobby))
-                                          .toList(),
-                                    ),
-                                ],
+
+                                    // About Me Section with Read More
+                                    _buildAboutMeSection(currentUser),
+
+                                    const SizedBox(height: 16),
+                                    // Hobby tags
+                                    if (currentUser.hobbies.isNotEmpty)
+                                      Wrap(
+                                        spacing: 8,
+                                        runSpacing: 4,
+                                        children: currentUser.hobbies
+                                            .take(3)
+                                            .map((hobby) => _buildTag(hobby))
+                                            .toList(),
+                                      ),
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
 
-                          // Top indicators
-                          Positioned(
-                            top: 16,
-                            left: 16,
-                            right: 16,
-                            child: Row(
-                              children: List.generate(
-                                _recommendedUsers.length.clamp(0, 5),
-                                (index) => Expanded(
-                                  child: Container(
-                                    height: 4,
-                                    margin: EdgeInsets.only(
-                                      right: index < 4 ? 6 : 0,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: index <= _currentProfileIndex
-                                          ? Colors.white
-                                          : Colors.white.withOpacity(0.3),
-                                      borderRadius: BorderRadius.circular(2),
+                            // Top indicators
+                            Positioned(
+                              top: 16,
+                              left: 16,
+                              right: 16,
+                              child: Row(
+                                children: List.generate(
+                                  _recommendedUsers.length.clamp(0, 5),
+                                  (index) => Expanded(
+                                    child: Container(
+                                      height: 4,
+                                      margin: EdgeInsets.only(
+                                        right: index < 4 ? 6 : 0,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: index <= _currentProfileIndex
+                                            ? Colors.white
+                                            : Colors.white.withOpacity(0.3),
+                                        borderRadius: BorderRadius.circular(2),
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                        ],
+
+                            // Tap hint overlay
+                            Positioned(
+                              top: 50,
+                              right: 16,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.6),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.touch_app,
+                                      size: 14,
+                                      color: Colors.white70,
+                                    ),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      'Tap for details',
+                                      style: TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -871,5 +957,488 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
       default:
         return 'Explore';
     }
+  }
+}
+
+// Detailed Profile Page
+class DetailedProfilePage extends StatelessWidget {
+  final RecommendedUser user;
+  final VoidCallback onLike;
+  final VoidCallback onPass;
+
+  const DetailedProfilePage({
+    Key? key,
+    required this.user,
+    required this.onLike,
+    required this.onPass,
+  }) : super(key: key);
+
+  // Safely decode base64 image
+  Widget _buildProfileImage(String? base64Image, {double? height}) {
+    if (base64Image == null || base64Image.isEmpty) {
+      return Container(
+        height: height ?? 400,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFFF6B9D), Color(0xFFFF8E53)],
+          ),
+        ),
+        child: const Center(
+          child: Icon(Icons.person, size: 100, color: Colors.white70),
+        ),
+      );
+    }
+
+    try {
+      final Uint8List imageBytes = base64Decode(base64Image);
+      return Container(
+        height: height ?? 400,
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: MemoryImage(imageBytes),
+            fit: BoxFit.cover,
+          ),
+        ),
+      );
+    } catch (e) {
+      print('Error decoding base64 image: $e');
+      return Container(
+        height: height ?? 400,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFFF6B9D), Color(0xFFFF8E53)],
+          ),
+        ),
+        child: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.broken_image, size: 60, color: Colors.white70),
+              SizedBox(height: 8),
+              Text(
+                'Image Error',
+                style: TextStyle(color: Colors.white70, fontSize: 14),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+  }
+
+  Widget _buildInfoCard({
+    required IconData icon,
+    required String title,
+    required String content,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFF4458).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: const Color(0xFFFF4458), size: 24),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF2C2C2C),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  content,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF666666),
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHobbiesSection() {
+    if (user.hobbies.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFF4458).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.interests,
+                  color: Color(0xFFFF4458),
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              const Text(
+                'Interests & Hobbies',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF2C2C2C),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: user.hobbies
+                .map(
+                  (hobby) => Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF4458).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: const Color(0xFFFF4458).withOpacity(0.3),
+                      ),
+                    ),
+                    child: Text(
+                      hobby,
+                      style: const TextStyle(
+                        color: Color(0xFFFF4458),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                )
+                .toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFFAFAFA),
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: Container(
+          margin: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.3),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ),
+        actions: [
+          Container(
+            margin: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.share, color: Colors.white),
+              onPressed: () {
+                // Handle share functionality
+              },
+            ),
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Hero Image Section
+            Stack(
+              children: [
+                _buildProfileImage(user.profilePicture, height: 500),
+
+                // Gradient overlay
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    height: 150,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Colors.black.withOpacity(0.7),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Basic Info Overlay
+                Positioned(
+                  bottom: 20,
+                  left: 20,
+                  right: 20,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              user.name,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 36,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            '${user.age}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 32,
+                              fontWeight: FontWeight.w300,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Match Score
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.3),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.stars,
+                              size: 18,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              '${user.matchScore}% Match',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+            // Content Section
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // About Me Section
+                  if (user.aboutMe != null && user.aboutMe!.isNotEmpty)
+                    _buildInfoCard(
+                      icon: Icons.person_outline,
+                      title: 'About Me',
+                      content: user.aboutMe!,
+                    ),
+
+                  // Looking For Section
+                  if (user.targetRelation.isNotEmpty)
+                    _buildInfoCard(
+                      icon: Icons.favorite_outline,
+                      title: 'Looking For',
+                      content: user.targetRelation,
+                    ),
+
+                  // Distance Section
+                  if (user.distanceKm != null)
+                    _buildInfoCard(
+                      icon: Icons.location_on_outlined,
+                      title: 'Distance',
+                      content: '${user.distanceKm!.toStringAsFixed(1)} km away',
+                    ),
+
+                  // Hobbies Section
+                  _buildHobbiesSection(),
+
+                  const SizedBox(height: 20),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+
+      // Bottom Action Bar
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 20,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: Row(
+            children: [
+              // Pass Button
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.pop(context);
+                    onPass();
+                  },
+                  child: Container(
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(28),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.close, color: Colors.grey, size: 24),
+                        SizedBox(width: 8),
+                        Text(
+                          'Pass',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(width: 16),
+
+              // Like Button
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.pop(context);
+                    onLike();
+                  },
+                  child: Container(
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF4458),
+                      borderRadius: BorderRadius.circular(28),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFFF4458).withOpacity(0.3),
+                          blurRadius: 10,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.favorite, color: Colors.white, size: 24),
+                        SizedBox(width: 8),
+                        Text(
+                          'Like',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
