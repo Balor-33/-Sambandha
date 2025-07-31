@@ -7,6 +7,7 @@ import '../services/firebase_user_service.dart';
 import '../model/user_action_model.dart';
 import 'dart:async';
 import 'matches_screen.dart';
+import '../widgets/notification_overlay.dart';
 
 class Homepage extends StatefulWidget {
   const Homepage({Key? key}) : super(key: key);
@@ -170,39 +171,52 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
   void _listenForMatches() {
     final userId = _firebaseUserService.currentUserId;
     if (userId == null) return;
+
     _matchSubscription = _firebaseUserService
         .getActionsTargetingUserStream(userId: userId)
         .listen((actions) async {
-          final newMatches = actions
-              .where((a) => a.matchStatus && a.actionType == 'like')
-              .toList();
-          if (newMatches.isNotEmpty &&
-              !_matches.any((m) => m.actionId == newMatches.first.actionId)) {
-            final matchedUserId = newMatches.first.actorUserId;
-            await _loadMatchedUserProfilePicture(matchedUserId);
-            setState(() {
-              _matches = newMatches;
-              _showMatchDialog = true;
-              _matchedUserName = _recommendedUsers
-                  .firstWhere(
-                    (u) => u.userId == matchedUserId,
-                    orElse: () => RecommendedUser(
-                      userId: '',
-                      name: 'Someone',
-                      age: 0,
-                      gender: [],
-                      interests: [],
-                      hobbies: [],
-                      targetRelation: '',
-                      matchScore: 0,
-                      ageCompatibilityScore: 0,
-                      genderCompatibilityScore: 0,
-                      hobbyMatchScore: 0,
-                      targetRelationScore: 0,
-                    ),
-                  )
-                  .name;
-            });
+          for (final action in actions) {
+            if (action.actionType == 'like') {
+              // Check if current user has also liked this user
+              final mutualLike = await _firebaseUserService.checkMutualLike(
+                currentUserId: userId,
+                otherUserId: action.actorUserId,
+              );
+
+              if (mutualLike &&
+                  !_matches.any((m) => m.actionId == action.actionId)) {
+                await _loadMatchedUserProfilePicture(action.actorUserId);
+                setState(() {
+                  _matches.add(action);
+                  _showMatchDialog = true;
+                  _matchedUserName = _recommendedUsers
+                      .firstWhere(
+                        (u) => u.userId == action.actorUserId,
+                        orElse: () => RecommendedUser(
+                          userId: '',
+                          name: 'Someone',
+                          age: 0,
+                          gender: [],
+                          interests: [],
+                          hobbies: [],
+                          targetRelation: '',
+                          matchScore: 0,
+                          ageCompatibilityScore: 0,
+                          genderCompatibilityScore: 0,
+                          hobbyMatchScore: 0,
+                          targetRelationScore: 0,
+                        ),
+                      )
+                      .name;
+                });
+
+                // Update match status in Firestore
+                await _firebaseUserService.updateMatchStatus(
+                  actionId: action.actionId,
+                  status: true,
+                );
+              }
+            }
           }
         });
   }
@@ -299,7 +313,10 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
         targetUserId: targetUserId,
         actionType: actionType,
       );
+
+      // Only show match dialog if it's a mutual like
       if (actionType == 'like' && result == true) {
+        await _loadMatchedUserProfilePicture(targetUserId);
         setState(() {
           _showMatchDialog = true;
           _matchedUserName = _recommendedUsers[prevIndex].name;
@@ -1035,182 +1052,23 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
         setState(() {
           _showMatchDialog = false;
         });
-        // TODO: Navigate to chat screen
+        // TODO: Navigate to chat screen with the matched user
+        // Navigator.push(context, MaterialPageRoute(
+        //   builder: (context) => ChatScreen(
+        //     matchedUserId: _matches.first.actorUserId,
+        //     matchedUserName: matchedUserName,
+        //   ),
+        // ));
       },
       onContinue: () {
         setState(() {
           _showMatchDialog = false;
         });
+        // Optionally, you can add haptic feedback
+        // HapticFeedback.lightImpact();
       },
-      pulseAnimation: _pulseAnimation,
     );
   }
-}
 
-class MatchNotificationOverlay extends StatelessWidget {
-  final String? currentUserProfilePicture;
-  final String? matchedUserProfilePicture;
-  final String matchedUserName;
-  final VoidCallback onChat;
-  final VoidCallback onContinue;
-  final Animation<double>? pulseAnimation;
-
-  const MatchNotificationOverlay({
-    Key? key,
-    required this.currentUserProfilePicture,
-    required this.matchedUserProfilePicture,
-    required this.matchedUserName,
-    required this.onChat,
-    required this.onContinue,
-    this.pulseAnimation,
-  }) : super(key: key);
-
-  Widget _buildProfileImage(String? base64Image) {
-    if (base64Image == null || base64Image.isEmpty) {
-      return Container(
-        width: 90,
-        height: 90,
-        decoration: const BoxDecoration(
-          color: Color(0xFFE8E8E8),
-          shape: BoxShape.circle,
-        ),
-        child: const Icon(Icons.person, size: 50, color: Color(0xFFBDBDBD)),
-      );
-    }
-    try {
-      final Uint8List imageBytes = base64Decode(base64Image);
-      return Container(
-        width: 90,
-        height: 90,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.white, width: 4),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.15),
-              blurRadius: 10,
-              offset: const Offset(0, 5),
-            ),
-          ],
-          image: DecorationImage(
-            image: MemoryImage(imageBytes),
-            fit: BoxFit.cover,
-          ),
-        ),
-      );
-    } catch (e) {
-      return Container(
-        width: 90,
-        height: 90,
-        decoration: const BoxDecoration(
-          color: Color(0xFFE8E8E8),
-          shape: BoxShape.circle,
-        ),
-        child: const Icon(Icons.error, size: 50, color: Colors.red),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.black54,
-      child: Center(
-        child: ScaleTransition(
-          scale: pulseAnimation ?? kAlwaysCompleteAnimation,
-          child: Container(
-            padding: const EdgeInsets.all(32),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(32),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.green.withOpacity(0.2),
-                  blurRadius: 40,
-                  spreadRadius: 10,
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _buildProfileImage(currentUserProfilePicture),
-                    const SizedBox(width: 16),
-                    const Icon(
-                      Icons.favorite,
-                      color: Color(0xFF4CAF50),
-                      size: 48,
-                    ),
-                    const SizedBox(width: 16),
-                    _buildProfileImage(matchedUserProfilePicture),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  "It's a Match!",
-                  style: const TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF4CAF50),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'You and $matchedUserName liked each other.',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    color: Color(0xFF2C2C2C),
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 32),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    ElevatedButton.icon(
-                      onPressed: onChat,
-                      icon: const Icon(Icons.chat_bubble_outline),
-                      label: const Text('Start Chatting'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF4CAF50),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(25),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    OutlinedButton(
-                      onPressed: onContinue,
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Color(0xFF4CAF50)),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(25),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
-                        ),
-                      ),
-                      child: const Text(
-                        'Continue Browsing',
-                        style: TextStyle(color: Color(0xFF4CAF50)),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  // Also, you can enhance the match detection in your _listenForMatches method
 }

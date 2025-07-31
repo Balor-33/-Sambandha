@@ -481,18 +481,41 @@ class FirebaseUserService {
     }
   }
 
-  /// Record a user action (like or pass)
+  /// Check if two users have mutually liked each other
+  Future<bool> checkMutualLike({
+    required String currentUserId,
+    required String otherUserId,
+  }) async {
+    final query = await _firestore
+        .collection(USER_ACTIONS_COLLECTION)
+        .where('actorUserId', isEqualTo: currentUserId)
+        .where('targetUserId', isEqualTo: otherUserId)
+        .where('actionType', isEqualTo: 'like')
+        .limit(1)
+        .get();
+
+    return query.docs.isNotEmpty;
+  }
+
+  /// Update match status for an action
+  Future<void> updateMatchStatus({
+    required String actionId,
+    required bool status,
+  }) async {
+    await _firestore.collection(USER_ACTIONS_COLLECTION).doc(actionId).update({
+      'matchStatus': status,
+    });
+  }
+
+  /// Record a user action (like or pass) - Updated version
   Future<bool> recordUserAction({
     required String targetUserId,
-    required String actionType, // 'like' or 'pass'
+    required String actionType,
   }) async {
     final actorUserId = currentUserId;
-    if (actorUserId == null) {
-      throw Exception('User not authenticated');
-    }
-    if (actionType != 'like' && actionType != 'pass') {
-      throw Exception('Invalid action type');
-    }
+    if (actorUserId == null) throw Exception('User not authenticated');
+
+    // Create the action document
     final actionRef = _firestore.collection(USER_ACTIONS_COLLECTION).doc();
     final userAction = UserAction(
       actionId: actionRef.id,
@@ -502,22 +525,20 @@ class FirebaseUserService {
       timestamp: Timestamp.now(),
       matchStatus: false,
     );
-    // If it's a like, check for a match
-    bool match = false;
+
+    // For likes, check for mutual match
     if (actionType == 'like') {
-      match = await _checkForMatch(actorUserId, targetUserId);
-      if (match) {
-        // Update both user_actions documents with matchStatus=true
+      final mutualLike = await _checkForMatch(actorUserId, targetUserId);
+      if (mutualLike) {
+        // Update both actions as matches
         await _updateMatchStatusForOtherUserLike(actorUserId, targetUserId);
         await actionRef.set({...userAction.toMap(), 'matchStatus': true});
-        // Create a new document in 'matches' collection
         await _createMatch(actorUserId, targetUserId);
-        // Trigger match notification (placeholder)
-        _triggerMatchNotification(actorUserId, targetUserId);
         return true;
       }
     }
-    await actionRef.set({...userAction.toMap(), 'matchStatus': false});
+
+    await actionRef.set(userAction.toMap());
     return false;
   }
 
