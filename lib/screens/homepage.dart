@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 import '../services/recommendation_service.dart';
@@ -168,67 +169,178 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
     }
   }
 
+  // Enhanced _listenForMatches method
   void _listenForMatches() {
     final userId = _firebaseUserService.currentUserId;
-    if (userId == null) return;
+    if (userId == null) {
+      print('Error: Current user ID is null, cannot listen for matches');
+      return;
+    }
 
+    print('Starting to listen for matches for user: $userId');
+
+    // Listen for actions targeting current user with real-time updates
     _matchSubscription = _firebaseUserService
         .getActionsTargetingUserStream(userId: userId)
-        .listen((actions) async {
-          for (final action in actions) {
-            if (action.actionType == 'like') {
-              // Check if current user has also liked this user
-              final mutualLike = await _firebaseUserService.checkMutualLike(
-                currentUserId: userId,
-                otherUserId: action.actorUserId,
+        .listen(
+          (actions) async {
+            print('Received ${actions.length} actions targeting user $userId');
+
+            // Process each action
+            for (final action in actions) {
+              print(
+                'Processing action: ${action.actionId}, type: ${action.actionType}, '
+                'matchStatus: ${action.matchStatus}, actorUserId: ${action.actorUserId}',
               );
 
-              if (mutualLike &&
-                  !_matches.any((m) => m.actionId == action.actionId)) {
-                await _loadMatchedUserProfilePicture(action.actorUserId);
-                setState(() {
-                  _matches.add(action);
-                  _showMatchDialog = true;
-                  _matchedUserName = _recommendedUsers
-                      .firstWhere(
-                        (u) => u.userId == action.actorUserId,
-                        orElse: () => RecommendedUser(
-                          userId: '',
-                          name: 'Someone',
-                          age: 0,
-                          gender: [],
-                          interests: [],
-                          hobbies: [],
-                          targetRelation: '',
-                          matchScore: 0,
-                          ageCompatibilityScore: 0,
-                          genderCompatibilityScore: 0,
-                          hobbyMatchScore: 0,
-                          targetRelationScore: 0,
-                        ),
-                      )
-                      .name;
-                });
-
-                // Update match status in Firestore
-                await _firebaseUserService.updateMatchStatus(
-                  actionId: action.actionId,
-                  status: true,
-                );
+              // Check for newly matched likes (matchStatus became true)
+              if (action.actionType == 'like' && action.matchStatus == true) {
+                await _handleNewMatch(action);
               }
             }
-          }
-        });
+          },
+          onError: (error) {
+            print('Error listening for matches: $error');
+            // Optionally show a snackbar or toast to the user
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Connection error: Unable to receive match notifications',
+                  ),
+                  backgroundColor: Colors.orange,
+                  duration: Duration(seconds: 3),
+                ),
+              );
+            }
+          },
+          cancelOnError: false, // Keep listening even if there's an error
+        );
   }
 
+  // Separate method to handle new matches for better organization
+  Future<void> _handleNewMatch(UserAction action) async {
+    try {
+      // Check if we've already shown this match
+      if (_matches.any((m) => m.actionId == action.actionId)) {
+        print('Match already processed for action ID: ${action.actionId}');
+        return;
+      }
+
+      print('New match detected! Action ID: ${action.actionId}');
+
+      // Load the matched user's profile picture
+      await _loadMatchedUserProfilePicture(action.actorUserId);
+
+      // Get the matched user's name - first try from current recommendations
+      String matchedUserName = _getMatchedUserNameFromRecommendations(
+        action.actorUserId,
+      );
+
+      // If not found in recommendations, fetch from Firebase
+      if (matchedUserName == 'Someone') {
+        matchedUserName = await _getMatchedUserNameFromFirebase(
+          action.actorUserId,
+        );
+      }
+
+      // Show the match dialog
+      if (mounted) {
+        setState(() {
+          _matches.add(action);
+          _showMatchDialog = true;
+          _matchedUserName = matchedUserName;
+        });
+
+        print('Match dialog displayed for user: $matchedUserName');
+
+        // Optional: Add haptic feedback for better UX
+        try {
+          HapticFeedback.heavyImpact();
+        } catch (e) {
+          print('Haptic feedback not available: $e');
+        }
+      }
+    } catch (e) {
+      print('Error handling new match: $e');
+      // Optionally show error to user
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error processing match notification'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
+  // Helper method to get matched user name from current recommendations
+  String _getMatchedUserNameFromRecommendations(String userId) {
+    try {
+      final matchedUser = _recommendedUsers.firstWhere(
+        (u) => u.userId == userId,
+        orElse: () => RecommendedUser(
+          userId: userId,
+          name: 'Someone', // Default name if user not found
+          age: 0,
+          gender: [],
+          interests: [],
+          hobbies: [],
+          targetRelation: '',
+          matchScore: 0,
+          ageCompatibilityScore: 0,
+          genderCompatibilityScore: 0,
+          hobbyMatchScore: 0,
+          targetRelationScore: 0,
+        ),
+      );
+
+      return matchedUser.name;
+    } catch (e) {
+      print('Error getting matched user from recommendations: $e');
+      return 'Someone';
+    }
+  }
+
+  // Helper method to get matched user name from Firebase
+  Future<String> _getMatchedUserNameFromFirebase(String userId) async {
+    try {
+      print('Fetching user data from Firebase for userId: $userId');
+      final userData = await _firebaseUserService.getUserInterests(userId);
+
+      final name = userData?['name']?.toString() ?? 'Someone';
+      print('Retrieved name from Firebase: $name');
+
+      return name;
+    } catch (e) {
+      print('Error getting matched user name from Firebase: $e');
+      return 'Someone';
+    }
+  }
+
+  // Enhanced dispose method to ensure proper cleanup
   @override
   void dispose() {
+    print('Disposing homepage resources...');
+
     _cardController.dispose();
     _flashController.dispose();
     _passButtonController.dispose();
     _likeButtonController.dispose();
-    _matchSubscription?.cancel();
     _pulseController?.dispose();
+
+    // Cancel match subscription with proper error handling
+    _matchSubscription
+        ?.cancel()
+        .then((_) {
+          print('Match subscription cancelled successfully');
+        })
+        .catchError((error) {
+          print('Error cancelling match subscription: $error');
+        });
+
     super.dispose();
   }
 
@@ -242,11 +354,30 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
     }
   }
 
+  // Enhanced method to load matched user profile picture with error handling
   Future<void> _loadMatchedUserProfilePicture(String matchedUserId) async {
-    final pic = await _firebaseUserService.getUserProfilePicture(matchedUserId);
-    setState(() {
-      _matchedUserProfilePicture = pic;
-    });
+    try {
+      print('Loading profile picture for matched user: $matchedUserId');
+      final pic = await _firebaseUserService.getUserProfilePicture(
+        matchedUserId,
+      );
+
+      if (mounted) {
+        setState(() {
+          _matchedUserProfilePicture = pic;
+        });
+      }
+
+      print('Profile picture loaded successfully');
+    } catch (e) {
+      print('Error loading matched user profile picture: $e');
+      // Set to null so the UI can handle the missing image gracefully
+      if (mounted) {
+        setState(() {
+          _matchedUserProfilePicture = null;
+        });
+      }
+    }
   }
 
   void _onItemTapped(int index) {
@@ -306,20 +437,27 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
 
   Future<void> _handleAction(String actionType) async {
     if (_recommendedUsers.isEmpty) return;
+
     final targetUserId = _recommendedUsers[_currentProfileIndex].userId;
+    final targetUserName = _recommendedUsers[_currentProfileIndex].name;
+
     try {
-      final prevIndex = _currentProfileIndex;
+      print('Handling $actionType action for user: $targetUserId');
+
       final result = await _firebaseUserService.recordUserAction(
         targetUserId: targetUserId,
         actionType: actionType,
       );
 
-      // Only show match dialog if it's a mutual like
+      // If it's a like action and result is true (immediate match)
       if (actionType == 'like' && result == true) {
+        print('Immediate match detected!');
+
         await _loadMatchedUserProfilePicture(targetUserId);
+
         setState(() {
           _showMatchDialog = true;
-          _matchedUserName = _recommendedUsers[prevIndex].name;
+          _matchedUserName = targetUserName;
         });
       }
     } catch (e) {
@@ -752,63 +890,6 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 8),
-                                  if (currentUser.targetRelation.isNotEmpty)
-                                    Row(
-                                      children: [
-                                        const Icon(
-                                          Icons.favorite_outline,
-                                          color: Colors.white70,
-                                          size: 18,
-                                        ),
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          currentUser.targetRelation,
-                                          style: const TextStyle(
-                                            color: Colors.white70,
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w400,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  if (currentUser.distanceKm != null)
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 4),
-                                      child: Row(
-                                        children: [
-                                          const Icon(
-                                            Icons.location_on_outlined,
-                                            color: Colors.white70,
-                                            size: 18,
-                                          ),
-                                          const SizedBox(width: 6),
-                                          Text(
-                                            '${currentUser.distanceKm!.toStringAsFixed(1)} km away',
-                                            style: const TextStyle(
-                                              color: Colors.white70,
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w400,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  if (currentUser.aboutMe != null &&
-                                      currentUser.aboutMe!.isNotEmpty)
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 8),
-                                      child: Text(
-                                        currentUser.aboutMe!,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          color: Colors.white70,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w400,
-                                        ),
-                                      ),
-                                    ),
                                   const SizedBox(height: 16),
                                   // Hobby tags
                                   if (currentUser.hobbies.isNotEmpty)
@@ -1065,10 +1146,12 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
           _showMatchDialog = false;
         });
         // Optionally, you can add haptic feedback
-        // HapticFeedback.lightImpact();
+        try {
+          HapticFeedback.lightImpact();
+        } catch (e) {
+          print('Haptic feedback not available: $e');
+        }
       },
     );
   }
-
-  // Also, you can enhance the match detection in your _listenForMatches method
 }

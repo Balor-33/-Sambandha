@@ -8,12 +8,11 @@ class FirebaseUserService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // Collection reference for user interests
-  static const String USER_INTERESTS_COLLECTION = 'user_interests';
+  // Collection names
   static const String USER_ACTIONS_COLLECTION = 'user_actions';
   static const String MATCHES_COLLECTION = 'matches';
+  static const String USER_INTERESTS_COLLECTION = 'user_interests';
 
-  /// Get current user ID
   String? get currentUserId => _auth.currentUser?.uid;
 
   /// Calculate age from birthdate
@@ -77,7 +76,7 @@ class FirebaseUserService {
     required String targetRelation,
     GeoPoint? location,
     int? distancePreference,
-    String? aboutMe, // Added aboutMe parameter
+    String? aboutMe,
     Map<String, dynamic>? additionalFields,
   }) async {
     try {
@@ -94,17 +93,17 @@ class FirebaseUserService {
         'gender': gender,
         'interests': interests,
         'birthdate': Timestamp.fromDate(birthdate),
-        'age': calculatedAge, // Store calculated age
+        'age': calculatedAge,
         'hobbies': hobbies,
         'targetRelation': targetRelation,
         'location': location,
         'distancePreference': distancePreference,
         'name': name,
-        'aboutMe': aboutMe, // Added aboutMe field
+        'aboutMe': aboutMe,
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
-        'lastUpdated': FieldValue.serverTimestamp(), // Track lastUpdated
-        ...?additionalFields, // Spread additional fields if provided
+        'lastUpdated': FieldValue.serverTimestamp(),
+        ...?additionalFields,
       };
 
       await _firestore
@@ -128,7 +127,7 @@ class FirebaseUserService {
     int? distancePreference,
     String? occupation,
     String? bio,
-    String? aboutMe, // Added aboutMe parameter
+    String? aboutMe,
     List<String>? languages,
     Map<String, dynamic>? additionalFields,
   }) async {
@@ -140,15 +139,13 @@ class FirebaseUserService {
 
       Map<String, dynamic> updateData = {
         'updatedAt': FieldValue.serverTimestamp(),
-        'lastUpdated': FieldValue.serverTimestamp(), // Track lastUpdated
+        'lastUpdated': FieldValue.serverTimestamp(),
       };
 
       if (interests != null) updateData['interests'] = interests;
       if (birthdate != null) {
         updateData['birthdate'] = Timestamp.fromDate(birthdate);
-        updateData['age'] = calculateAge(
-          birthdate,
-        ); // Recalculate age when birthdate changes
+        updateData['age'] = calculateAge(birthdate);
       }
       if (gender != null) updateData['gender'] = gender;
       if (hobbies != null) updateData['hobbies'] = hobbies;
@@ -158,8 +155,7 @@ class FirebaseUserService {
         updateData['distancePreference'] = distancePreference;
       if (name != null) updateData['name'] = name;
       if (bio != null) updateData['bio'] = bio;
-      if (aboutMe != null)
-        updateData['aboutMe'] = aboutMe; // Added aboutMe handling
+      if (aboutMe != null) updateData['aboutMe'] = aboutMe;
       if (languages != null) updateData['languages'] = languages;
       if (additionalFields != null) updateData.addAll(additionalFields);
 
@@ -191,7 +187,7 @@ class FirebaseUserService {
         // Update age if birthdate exists
         if (data['birthdate'] != null) {
           final birthdate = (data['birthdate'] as Timestamp).toDate();
-          data['age'] = calculateAge(birthdate); // Always return current age
+          data['age'] = calculateAge(birthdate);
         }
 
         return data;
@@ -220,9 +216,7 @@ class FirebaseUserService {
             // Update age if birthdate exists
             if (data['birthdate'] != null) {
               final birthdate = (data['birthdate'] as Timestamp).toDate();
-              data['age'] = calculateAge(
-                birthdate,
-              ); // Always return current age
+              data['age'] = calculateAge(birthdate);
             }
 
             return data;
@@ -379,11 +373,9 @@ class FirebaseUserService {
     List<String>? excludeUserIds,
   }) async {
     try {
-      // Note: This is a simplified implementation. For production, consider using
-      // GeoFlutterFire or similar libraries for more efficient geo queries
       final snapshot = await _firestore
           .collection(USER_INTERESTS_COLLECTION)
-          .limit(limit * 3) // Get more to filter by distance
+          .limit(limit * 3)
           .get();
 
       List<Map<String, dynamic>> users = [];
@@ -507,89 +499,166 @@ class FirebaseUserService {
     });
   }
 
-  /// Record a user action (like or pass) - Updated version
   Future<bool> recordUserAction({
     required String targetUserId,
     required String actionType,
   }) async {
-    final actorUserId = currentUserId;
-    if (actorUserId == null) throw Exception('User not authenticated');
+    try {
+      final actorUserId = currentUserId;
+      if (actorUserId == null) throw Exception('User not authenticated');
 
-    // Create the action document
-    final actionRef = _firestore.collection(USER_ACTIONS_COLLECTION).doc();
-    final userAction = UserAction(
-      actionId: actionRef.id,
-      actorUserId: actorUserId,
-      targetUserId: targetUserId,
-      actionType: actionType,
-      timestamp: Timestamp.now(),
-      matchStatus: false,
-    );
+      print('Recording $actionType action from $actorUserId to $targetUserId');
 
-    // For likes, check for mutual match
-    if (actionType == 'like') {
-      final mutualLike = await _checkForMatch(actorUserId, targetUserId);
-      if (mutualLike) {
-        // Update both actions as matches
-        await _updateMatchStatusForOtherUserLike(actorUserId, targetUserId);
-        await actionRef.set({...userAction.toMap(), 'matchStatus': true});
-        await _createMatch(actorUserId, targetUserId);
-        return true;
+      // Check for existing action to prevent duplicates
+      final existingQuery = await _firestore
+          .collection(USER_ACTIONS_COLLECTION)
+          .where('actorUserId', isEqualTo: actorUserId)
+          .where('targetUserId', isEqualTo: targetUserId)
+          .limit(1)
+          .get();
+
+      DocumentReference actionRef;
+      bool isExistingAction = existingQuery.docs.isNotEmpty;
+
+      // Handle existing or new action
+      if (isExistingAction) {
+        actionRef = existingQuery.docs.first.reference;
+        final existingData = existingQuery.docs.first.data();
+
+        // If action already exists with same type, return its match status
+        if (existingData['actionType'] == actionType) {
+          return existingData['matchStatus'] ?? false;
+        }
+
+        // Update existing action if it's a different type
+        await actionRef.update({
+          'actionType': actionType,
+          'timestamp': FieldValue.serverTimestamp(),
+        });
+      } else {
+        // Create new action document
+        actionRef = _firestore.collection(USER_ACTIONS_COLLECTION).doc();
+        await actionRef.set({
+          'actionId': actionRef.id,
+          'actorUserId': actorUserId,
+          'targetUserId': targetUserId,
+          'actionType': actionType,
+          'timestamp': FieldValue.serverTimestamp(),
+          'matchStatus': false,
+        });
       }
-    }
 
-    await actionRef.set(userAction.toMap());
-    return false;
-  }
+      // For like actions, check for reciprocal like using the helper method
+      if (actionType == 'like') {
+        final hasReciprocalLike = await _checkForReciprocalLike(
+          currentUserId: actorUserId,
+          otherUserId: targetUserId,
+        );
 
-  /// Check if a match exists (i.e., both users liked each other)
-  Future<bool> _checkForMatch(String actorUserId, String targetUserId) async {
-    final query = await _firestore
-        .collection(USER_ACTIONS_COLLECTION)
-        .where('actorUserId', isEqualTo: targetUserId)
-        .where('targetUserId', isEqualTo: actorUserId)
-        .where('actionType', isEqualTo: 'like')
-        .limit(1)
-        .get();
-    return query.docs.isNotEmpty;
-  }
+        if (hasReciprocalLike) {
+          print('Match found! Handling match creation...');
+          await _handleMatchCreation(actorUserId, targetUserId);
+          return true;
+        }
+      }
 
-  /// Update matchStatus for the other user's like action if a match is found
-  Future<void> _updateMatchStatusForOtherUserLike(
-    String actorUserId,
-    String targetUserId,
-  ) async {
-    final query = await _firestore
-        .collection(USER_ACTIONS_COLLECTION)
-        .where('actorUserId', isEqualTo: targetUserId)
-        .where('targetUserId', isEqualTo: actorUserId)
-        .where('actionType', isEqualTo: 'like')
-        .limit(1)
-        .get();
-    if (query.docs.isNotEmpty) {
-      final docRef = query.docs.first.reference;
-      await docRef.update({'matchStatus': true});
+      return false;
+    } catch (e) {
+      print('Error in recordUserAction: $e');
+      rethrow;
     }
   }
 
-  /// Create a new match document in 'matches' collection
-  Future<void> _createMatch(String userA, String userB) async {
-    // Ensure consistent ordering for userA/userB
-    final sorted = [userA, userB]..sort();
-    final matchId = '${sorted[0]}_${sorted[1]}';
-    final matchRef = _firestore.collection(MATCHES_COLLECTION).doc(matchId);
-    final match = Match(
-      matchId: matchId,
-      userA: sorted[0],
-      userB: sorted[1],
-      timestamp: Timestamp.now(),
-    );
-    await matchRef.set(match.toMap());
+  /// Check if the other user has already liked current user
+  Future<bool> _checkForReciprocalLike({
+    required String currentUserId,
+    required String otherUserId,
+  }) async {
+    try {
+      print('Checking for reciprocal like from $otherUserId to $currentUserId');
+
+      // Look for likes from the other user to current user that aren't matched yet
+      final query = await _firestore
+          .collection(USER_ACTIONS_COLLECTION)
+          .where('actorUserId', isEqualTo: otherUserId)
+          .where('targetUserId', isEqualTo: currentUserId)
+          .where('actionType', isEqualTo: 'like')
+          .where('matchStatus', isEqualTo: false)
+          .limit(1)
+          .get();
+
+      final hasReciprocalLike = query.docs.isNotEmpty;
+      print('Reciprocal like exists: $hasReciprocalLike');
+
+      if (hasReciprocalLike) {
+        print('Found reciprocal like: ${query.docs.first.id}');
+      }
+
+      return hasReciprocalLike;
+    } catch (e) {
+      print('Error checking for reciprocal like: $e');
+      return false;
+    }
+  }
+
+  /// Handle match creation between two users
+  Future<void> _handleMatchCreation(String userA, String userB) async {
+    try {
+      print('Creating match between $userA and $userB');
+
+      // Find both like actions (in either direction)
+      final likeActionsQuery = await _firestore
+          .collection(USER_ACTIONS_COLLECTION)
+          .where('actorUserId', whereIn: [userA, userB])
+          .where('targetUserId', whereIn: [userA, userB])
+          .where('actionType', isEqualTo: 'like')
+          .where('matchStatus', isEqualTo: false)
+          .get();
+
+      if (likeActionsQuery.docs.length < 2) {
+        print('Not enough like actions found for match creation');
+        return;
+      }
+
+      // Use batch for atomic operations
+      final batch = _firestore.batch();
+
+      // Update all found actions to matched status
+      for (final doc in likeActionsQuery.docs) {
+        batch.update(doc.reference, {
+          'matchStatus': true,
+          'matchedAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      // Create match document
+      final sortedIds = [userA, userB]..sort();
+      final matchId = '${sortedIds[0]}_${sortedIds[1]}';
+      final matchRef = _firestore.collection(MATCHES_COLLECTION).doc(matchId);
+
+      batch.set(matchRef, {
+        'userA': sortedIds[0],
+        'userB': sortedIds[1],
+        'timestamp': FieldValue.serverTimestamp(),
+        'isActive': true,
+      });
+
+      // Execute batch
+      print('Committing match batch...');
+      await batch.commit();
+      print('Match created successfully!');
+
+      // Trigger notification for both users
+      _triggerMatchNotification(userA, userB);
+      _triggerMatchNotification(userB, userA);
+    } catch (e) {
+      print('Error in _handleMatchCreation: $e');
+      rethrow;
+    }
   }
 
   /// Placeholder for triggering a match notification
   void _triggerMatchNotification(String userA, String userB) {
-    // TODO: Integrate with notification system
     print('Match notification: $userA and $userB matched!');
   }
 
@@ -625,7 +694,7 @@ class FirebaseUserService {
         .toList();
   }
 
-  /// Real-time stream of actions where the current user is the target (for matches, etc.)
+  /// Real-time stream of actions where the current user is the target
   Stream<List<UserAction>> getActionsTargetingUserStream({String? userId}) {
     final uid = userId ?? currentUserId;
     if (uid == null) {
@@ -720,99 +789,8 @@ class FirebaseUserService {
         .toList();
   }
 
-  /// Reset any cached action filters (placeholder, if needed for stateful filtering)
+  /// Reset any cached action filters
   void resetActionFilters() {
     // No-op for now, but can be used to clear local caches if implemented
-  }
-}
-
-// Updated Model class for type safety
-class UserInterests {
-  final String userId;
-  final List<String> interests;
-  final List<String> gender;
-  final DateTime birthdate;
-  final int age; // This will be calculated dynamically
-  final List<String> hobbies;
-  final String targetRelation;
-  final GeoPoint? location;
-  final int? distancePreference;
-  final String? name;
-  final String? aboutMe; // Added aboutMe field
-  final DateTime? createdAt;
-  final DateTime? updatedAt;
-  final Map<String, dynamic>? additionalFields;
-
-  UserInterests({
-    required this.userId,
-    required this.gender,
-    required this.interests,
-    required this.birthdate,
-    required this.age,
-    required this.hobbies,
-    required this.targetRelation,
-    this.location,
-    this.distancePreference,
-    required this.name,
-    this.aboutMe, // Added aboutMe parameter
-    this.createdAt,
-    this.updatedAt,
-    this.additionalFields,
-  });
-
-  factory UserInterests.fromMap(Map<String, dynamic> map) {
-    final birthdate = (map['birthdate'] as Timestamp).toDate();
-
-    return UserInterests(
-      userId: map['userId'] ?? '',
-      gender: List<String>.from(map['gender'] ?? []),
-      interests: List<String>.from(map['interests'] ?? []),
-      birthdate: birthdate,
-      age: _calculateAge(birthdate), // Always calculate current age
-      hobbies: List<String>.from(map['hobbies'] ?? []),
-      targetRelation: map['targetRelation'] ?? '',
-      location: map['location'] as GeoPoint?,
-      distancePreference: map['distancePreference'] as int?,
-      name: map['name'],
-      aboutMe: map['aboutMe'], // Added aboutMe mapping
-      createdAt: map['createdAt'] != null
-          ? (map['createdAt'] as Timestamp).toDate()
-          : null,
-      updatedAt: map['updatedAt'] != null
-          ? (map['updatedAt'] as Timestamp).toDate()
-          : null,
-      additionalFields: map['additionalFields'],
-    );
-  }
-
-  static int _calculateAge(DateTime birthDate) {
-    final now = DateTime.now();
-    int age = now.year - birthDate.year;
-
-    if (now.month < birthDate.month ||
-        (now.month == birthDate.month && now.day < birthDate.day)) {
-      age--;
-    }
-
-    return age;
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'userId': userId,
-      'gender': gender,
-      'interests': interests,
-      'birthdate': Timestamp.fromDate(birthdate),
-      'age': age, // Store current calculated age
-      'hobbies': hobbies,
-      'targetRelation': targetRelation,
-      'location': location,
-      'distancePreference': distancePreference,
-      'name': name,
-      'aboutMe': aboutMe, // Added aboutMe to map
-      'createdAt': createdAt != null ? Timestamp.fromDate(createdAt!) : null,
-      'updatedAt': updatedAt != null ? Timestamp.fromDate(updatedAt!) : null,
-      'additionalFields': additionalFields,
-    };
   }
 }
