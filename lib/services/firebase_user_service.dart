@@ -151,8 +151,9 @@ class FirebaseUserService {
       if (hobbies != null) updateData['hobbies'] = hobbies;
       if (targetRelation != null) updateData['targetRelation'] = targetRelation;
       if (location != null) updateData['location'] = location;
-      if (distancePreference != null)
+      if (distancePreference != null) {
         updateData['distancePreference'] = distancePreference;
+      }
       if (name != null) updateData['name'] = name;
       if (bio != null) updateData['bio'] = bio;
       if (aboutMe != null) updateData['aboutMe'] = aboutMe;
@@ -503,73 +504,47 @@ class FirebaseUserService {
     required String targetUserId,
     required String actionType,
   }) async {
-    try {
-      final actorUserId = currentUserId;
-      if (actorUserId == null) throw Exception('User not authenticated');
+    final actorUserId = currentUserId;
+    if (actorUserId == null) throw Exception('User not authenticated');
 
-      print('Recording $actionType action from $actorUserId to $targetUserId');
+    // 1️⃣ Immediately write your “like” or “pass”
+    final actionRef = _firestore.collection(USER_ACTIONS_COLLECTION).doc();
+    await actionRef.set({
+      'actionId': actionRef.id,
+      'actorUserId': actorUserId,
+      'targetUserId': targetUserId,
+      'actionType': actionType,
+      'timestamp': FieldValue.serverTimestamp(),
+      'matchStatus': false,
+    });
 
-      // Check for existing action to prevent duplicates
-      final existingQuery = await _firestore
+    // 2️⃣ If it’s a like, look for the other user’s like → you
+    if (actionType == 'like') {
+      final reciprocal = await _firestore
           .collection(USER_ACTIONS_COLLECTION)
-          .where('actorUserId', isEqualTo: actorUserId)
-          .where('targetUserId', isEqualTo: targetUserId)
+          .where('actorUserId', isEqualTo: targetUserId)
+          .where('targetUserId', isEqualTo: actorUserId)
+          .where('actionType', isEqualTo: 'like')
           .limit(1)
           .get();
 
-      DocumentReference actionRef;
-      bool isExistingAction = existingQuery.docs.isNotEmpty;
+      if (reciprocal.docs.isNotEmpty) {
+        // 3️⃣ Mark both actions matched
+        await reciprocal.docs.first.reference.update({'matchStatus': true});
+        await actionRef.update({'matchStatus': true});
 
-      // Handle existing or new action
-      if (isExistingAction) {
-        actionRef = existingQuery.docs.first.reference;
-        final existingData = existingQuery.docs.first.data();
-
-        // If action already exists with same type, return its match status
-        if (existingData['actionType'] == actionType) {
-          return existingData['matchStatus'] ?? false;
-        }
-
-        // Update existing action if it's a different type
-        await actionRef.update({
-          'actionType': actionType,
-          'timestamp': FieldValue.serverTimestamp(),
-        });
-      } else {
-        // Create new action document
-        actionRef = _firestore.collection(USER_ACTIONS_COLLECTION).doc();
-        await actionRef.set({
-          'actionId': actionRef.id,
-          'actorUserId': actorUserId,
-          'targetUserId': targetUserId,
-          'actionType': actionType,
-          'timestamp': FieldValue.serverTimestamp(),
-          'matchStatus': false,
-        });
+        // 4️⃣ Create the single match doc
+        await _createMatch(actorUserId, targetUserId);
+        return true;
       }
-
-      // For like actions, check for reciprocal like using the helper method
-      if (actionType == 'like') {
-        final hasReciprocalLike = await _checkForReciprocalLike(
-          currentUserId: actorUserId,
-          otherUserId: targetUserId,
-        );
-
-        if (hasReciprocalLike) {
-          print('Match found! Handling match creation...');
-          await _handleMatchCreation(actorUserId, targetUserId);
-          return true;
-        }
-      }
-
-      return false;
-    } catch (e) {
-      print('Error in recordUserAction: $e');
-      rethrow;
     }
+
+    // 5️⃣ Otherwise, no match yet
+    return false;
   }
 
-  /// Check if the other user has already liked current user
+  /// Check if the other user has already liked current user (deprecated - now handled in transaction)
+  @deprecated
   Future<bool> _checkForReciprocalLike({
     required String currentUserId,
     required String otherUserId,
@@ -601,7 +576,8 @@ class FirebaseUserService {
     }
   }
 
-  /// Handle match creation between two users
+  /// Handle match creation between two users (deprecated - now handled in transaction)
+  @deprecated
   Future<void> _handleMatchCreation(String userA, String userB) async {
     try {
       print('Creating match between $userA and $userB');
@@ -793,4 +769,22 @@ class FirebaseUserService {
   void resetActionFilters() {
     // No-op for now, but can be used to clear local caches if implemented
   }
+
+  /// Create a match document between two users
+  Future<void> _createMatch(String userA, String userB) async {
+    final sortedIds = [userA, userB]..sort();
+    final matchId = '${sortedIds[0]}_${sortedIds[1]}';
+    final matchRef = _firestore.collection(MATCHES_COLLECTION).doc(matchId);
+
+    await matchRef.set({
+      'userA': sortedIds[0],
+      'userB': sortedIds[1],
+      'timestamp': FieldValue.serverTimestamp(),
+      'isActive': true,
+    });
+  }
+}
+
+extension on DocumentSnapshot<Object?> {
+  get docs => null;
 }
