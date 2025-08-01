@@ -3,6 +3,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:convert';
 
+// Make sure to import your updated ChatService
+// import 'chat_service.dart';
+
 class ChatScreen extends StatefulWidget {
   final String chatId;
   final String otherUserId;
@@ -27,11 +30,47 @@ class _ChatScreenState extends State<ChatScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
+  // Use ChatService for better error handling
+  // late final ChatService _chatService;
+
+  @override
+  void initState() {
+    super.initState();
+    // _chatService = ChatService();
+    _ensureChatExists();
+  }
+
   @override
   void dispose() {
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  // Ensure chat document exists before loading messages
+  Future<void> _ensureChatExists() async {
+    try {
+      final currentUser = _auth.currentUser;
+      if (currentUser == null) return;
+
+      final chatDoc = await _firestore
+          .collection('chats')
+          .doc(widget.chatId)
+          .get();
+
+      if (!chatDoc.exists) {
+        // Create chat if it doesn't exist
+        await _firestore.collection('chats').doc(widget.chatId).set({
+          'participants': [currentUser.uid, widget.otherUserId],
+          'createdAt': FieldValue.serverTimestamp(),
+          'lastMessageAt': FieldValue.serverTimestamp(),
+          'lastMessage': '',
+          'lastMessageSenderId': '',
+        });
+      }
+    } catch (e) {
+      print('Error ensuring chat exists: $e');
+    }
   }
 
   void _sendMessage() async {
@@ -44,24 +83,32 @@ class _ChatScreenState extends State<ChatScreen> {
     if (currentUser == null) return;
 
     try {
-      // Add message to chat
-      await _firestore
+      // Use batch write for atomicity
+      final batch = _firestore.batch();
+
+      // Add message to subcollection
+      final messageRef = _firestore
           .collection('chats')
           .doc(widget.chatId)
           .collection('messages')
-          .add({
-            'text': message,
-            'senderId': currentUser.uid,
-            'timestamp': FieldValue.serverTimestamp(),
-            'type': 'text',
-          });
+          .doc(); // Auto-generate ID
+
+      batch.set(messageRef, {
+        'text': message,
+        'senderId': currentUser.uid,
+        'timestamp': FieldValue.serverTimestamp(),
+        'type': 'text',
+      });
 
       // Update chat's last message
-      await _firestore.collection('chats').doc(widget.chatId).update({
+      final chatRef = _firestore.collection('chats').doc(widget.chatId);
+      batch.update(chatRef, {
         'lastMessage': message,
-        'lastMessageTime': FieldValue.serverTimestamp(),
+        'lastMessageAt': FieldValue.serverTimestamp(),
         'lastMessageSenderId': currentUser.uid,
       });
+
+      await batch.commit();
 
       // Auto scroll to bottom
       Future.delayed(const Duration(milliseconds: 100), () {
@@ -75,6 +122,15 @@ class _ChatScreenState extends State<ChatScreen> {
       });
     } catch (e) {
       print('Error sending message: $e');
+      // Show error to user
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to send message: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -148,7 +204,26 @@ class _ChatScreenState extends State<ChatScreen> {
                   .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
-                  return const Center(child: Text('Something went wrong'));
+                  print('Stream error: ${snapshot.error}');
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.error_outline,
+                          size: 48,
+                          color: Colors.red,
+                        ),
+                        const SizedBox(height: 16),
+                        Text('Error: ${snapshot.error}'),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () => setState(() {}), // Trigger rebuild
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  );
                 }
 
                 if (snapshot.connectionState == ConnectionState.waiting) {
@@ -195,13 +270,24 @@ class _ChatScreenState extends State<ChatScreen> {
                   );
                 }
 
+                // Auto-scroll to bottom when new messages arrive
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (_scrollController.hasClients) {
+                    _scrollController.animateTo(
+                      _scrollController.position.maxScrollExtent,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOut,
+                    );
+                  }
+                });
+
                 return ListView.builder(
                   controller: _scrollController,
                   padding: const EdgeInsets.all(16),
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
-                    final message =
-                        messages[index].data() as Map<String, dynamic>;
+                    final messageDoc = messages[index];
+                    final message = messageDoc.data() as Map<String, dynamic>;
                     final isMe = message['senderId'] == _auth.currentUser?.uid;
 
                     return _buildMessageBubble(
@@ -340,6 +426,28 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
                 textInputAction: TextInputAction.send,
                 onSubmitted: (_) => _sendMessage(),
+                maxLength: 1000, // Match security rules limit
+                buildCounter:
+                    (
+                      context, {
+                      required currentLength,
+                      required isFocused,
+                      maxLength,
+                    }) {
+                      // Hide counter unless close to limit
+                      if (currentLength > 900) {
+                        return Text(
+                          '$currentLength/$maxLength',
+                          style: TextStyle(
+                            color: currentLength >= maxLength!
+                                ? Colors.red
+                                : Colors.grey,
+                            fontSize: 12,
+                          ),
+                        );
+                      }
+                      return null;
+                    },
               ),
             ),
           ),

@@ -60,7 +60,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
   Future<int> _getUnreadCount(String matchUserId) async {
     try {
       final chatId = _chatService.getChatId(_currentUserId!, matchUserId);
-      return await _chatService.getUnreadMessageCount(chatId, _currentUserId!);
+      return await _chatService.getUnreadMessageCount(chatId);
     } catch (e) {
       print('Error getting unread count: $e');
       return 0;
