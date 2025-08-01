@@ -76,17 +76,25 @@ class _HobbiesScreenState extends State<HobbiesScreen> {
     });
   }
 
-  Widget _buildHobbyPill(String label, String emoji) {
+  Widget _buildHobbyPill(
+    String label,
+    String emoji,
+    double screenWidth,
+    double screenHeight,
+  ) {
     final isSelected = _selectedHobbies.contains(label);
 
     return GestureDetector(
       onTap: () => _toggleHobby(label),
       child: Container(
-        height: 50,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        margin: const EdgeInsets.only(right: 12, bottom: 12),
+        height: screenHeight * 0.06,
+        padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
+        margin: EdgeInsets.only(
+          right: screenWidth * 0.03,
+          bottom: screenHeight * 0.015,
+        ),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(25),
+          borderRadius: BorderRadius.circular(screenHeight * 0.03),
           color: isSelected ? Colors.black : Colors.white,
           border: Border.all(color: Colors.grey.shade300, width: 1),
         ),
@@ -96,13 +104,14 @@ class _HobbiesScreenState extends State<HobbiesScreen> {
             Text(
               label,
               style: TextStyle(
-                fontSize: 16,
+                fontSize: screenWidth * 0.04,
                 fontWeight: FontWeight.w500,
                 color: isSelected ? Colors.white : Colors.black,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-            const SizedBox(width: 6),
-            Text(emoji, style: const TextStyle(fontSize: 16)),
+            SizedBox(width: screenWidth * 0.015),
+            Text(emoji, style: TextStyle(fontSize: screenWidth * 0.04)),
           ],
         ),
       ),
@@ -111,84 +120,111 @@ class _HobbiesScreenState extends State<HobbiesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Back button
-              IconButton(
-                onPressed: () => Navigator.pop(context),
-                icon: const Icon(
-                  Icons.arrow_back_ios,
-                  size: 24,
-                  color: Colors.black,
-                ),
-                padding: EdgeInsets.zero,
-                alignment: Alignment.centerLeft,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final screenWidth = constraints.maxWidth;
+        final screenHeight = constraints.maxHeight;
+
+        return Scaffold(
+          backgroundColor: Colors.white,
+          body: SafeArea(
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: screenWidth * 0.06,
+                vertical: screenHeight * 0.03,
               ),
-
-              const SizedBox(height: 32),
-
-              // Main title
-              const Text(
-                "Let's explore your\ninterests !",
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                  height: 1.2,
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              // Subtitle section
-              Column(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Select your hobbies',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w500,
+                  // Back button
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: Icon(
+                      Icons.arrow_back_ios,
+                      size: screenWidth * 0.06,
                       color: Colors.black,
                     ),
+                    padding: EdgeInsets.zero,
+                    alignment: Alignment.centerLeft,
                   ),
+
+                  SizedBox(height: screenHeight * 0.04),
+
+                  // Main title
                   Text(
-                    'at least five',
-                    style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+                    "Let's explore your\ninterests !",
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.08,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                      height: 1.2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+
+                  SizedBox(height: screenHeight * 0.01),
+
+                  // Subtitle section
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Select your hobbies',
+                        style: TextStyle(
+                          fontSize: screenWidth * 0.045,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      Text(
+                        'at least five',
+                        style: TextStyle(
+                          fontSize: screenWidth * 0.04,
+                          color: Colors.grey.shade600,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  SizedBox(height: screenHeight * 0.03),
+
+                  // Hobbies selection area
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Wrap(
+                        children: _hobbies
+                            .map(
+                              (hobby) => _buildHobbyPill(
+                                hobby['label']!,
+                                hobby['emoji']!,
+                                screenWidth,
+                                screenHeight,
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ),
+                  ),
+
+                  SizedBox(height: screenHeight * 0.03),
+
+                  // Next button
+                  SizedBox(
+                    width: double.infinity,
+                    height: screenHeight * 0.07,
+                    child: NextButton(
+                      label: 'NEXT',
+                      onPressed: _continueToNext,
+                    ),
                   ),
                 ],
               ),
-
-              const SizedBox(height: 32),
-
-              // Hobbies selection area
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Wrap(
-                    children: _hobbies
-                        .map(
-                          (hobby) =>
-                              _buildHobbyPill(hobby['label']!, hobby['emoji']!),
-                        )
-                        .toList(),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // Next button
-              NextButton(label: 'NEXT', onPressed: _continueToNext),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

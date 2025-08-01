@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:sambandha/services/chat_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/firebase_user_service.dart';
-
 import '../services/user_data_service.dart';
 import '../model/match_model.dart';
 import '../screens/chat_screen.dart';
@@ -18,7 +17,7 @@ class MatchesScreen extends StatefulWidget {
 class _MatchesScreenState extends State<MatchesScreen> {
   final FirebaseUserService _userService = FirebaseUserService();
   final ChatService _chatService = ChatService();
-  final UserDataService _userDataService = UserDataService(); // Add this
+  final UserDataService _userDataService = UserDataService();
   late Stream<List<Match>> _matchesStream;
   String? _currentUserId;
 
@@ -83,24 +82,18 @@ class _MatchesScreenState extends State<MatchesScreen> {
 
   void _openChat(String matchUserId) async {
     try {
-      // Show loading indicator
       showDialog(
         context: context,
         barrierDismissible: false,
         builder: (context) => const Center(child: CircularProgressIndicator()),
       );
 
-      // Create or get chat ID
       final chatId = await _chatService.createOrGetChat(matchUserId);
-
-      // Get user details
       final userName = await _getUserName(matchUserId);
       final userImageUrl = await _getUserImageUrl(matchUserId);
 
-      // Close loading dialog
       if (mounted) Navigator.pop(context);
 
-      // Navigate to chat screen
       if (mounted) {
         Navigator.push(
           context,
@@ -115,15 +108,12 @@ class _MatchesScreenState extends State<MatchesScreen> {
         );
       }
 
-      // Call the callback if provided
       if (widget.onChat != null) {
         widget.onChat!(matchUserId, userName);
       }
     } catch (e) {
-      // Close loading dialog if still open
       if (mounted) Navigator.pop(context);
 
-      // Show error message
       if (mounted) {
         ScaffoldMessenger.of(
           context,
@@ -134,6 +124,9 @@ class _MatchesScreenState extends State<MatchesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Matches'),
@@ -149,28 +142,43 @@ class _MatchesScreenState extends State<MatchesScreen> {
           }
           final matches = snapshot.data ?? [];
           if (matches.isEmpty) {
-            return const Center(
+            return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.favorite_border, size: 64, color: Colors.grey),
-                  SizedBox(height: 16),
+                  Icon(
+                    Icons.favorite_border,
+                    size: screenWidth * 0.16,
+                    color: Colors.grey,
+                  ),
+                  SizedBox(height: screenHeight * 0.02),
                   Text(
                     'No matches yet',
-                    style: TextStyle(fontSize: 18, color: Colors.grey),
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.045,
+                      color: Colors.grey,
+                    ),
                   ),
-                  SizedBox(height: 8),
+                  SizedBox(height: screenHeight * 0.01),
                   Text(
                     'Keep swiping to find your perfect match!',
-                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.035,
+                      color: Colors.grey,
+                    ),
                   ),
                 ],
               ),
             );
           }
           return ListView.separated(
+            padding: EdgeInsets.symmetric(
+              horizontal: screenWidth * 0.04,
+              vertical: screenHeight * 0.02,
+            ),
             itemCount: matches.length,
-            separatorBuilder: (context, i) => const Divider(height: 1),
+            separatorBuilder: (context, i) =>
+                Divider(height: screenHeight * 0.01),
             itemBuilder: (context, i) {
               final match = matches[i];
               final matchUserId = match.userA == _currentUserId
@@ -186,13 +194,14 @@ class _MatchesScreenState extends State<MatchesScreen> {
                 builder: (context, futureSnapshot) {
                   if (futureSnapshot.connectionState ==
                       ConnectionState.waiting) {
-                    return const ListTile(
+                    return ListTile(
                       leading: CircleAvatar(
                         backgroundColor: Colors.grey,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        radius: screenWidth * 0.07,
+                        child: const CircularProgressIndicator(strokeWidth: 2),
                       ),
                       title: Text('Loading...'),
-                      subtitle: Text(''),
+                      subtitle: const Text(''),
                     );
                   }
 
@@ -204,38 +213,56 @@ class _MatchesScreenState extends State<MatchesScreen> {
 
                   return ListTile(
                     leading: CircleAvatar(
+                      radius: screenWidth * 0.07,
                       backgroundImage: _userDataService
                           .getMemoryImageFromBase64(profilePic),
                       backgroundColor: Colors.grey.shade200,
                       child: (profilePic == null || profilePic.isEmpty)
-                          ? const Icon(Icons.person, color: Colors.grey)
+                          ? Icon(
+                              Icons.person,
+                              color: Colors.grey,
+                              size: screenWidth * 0.07,
+                            )
                           : null,
                     ),
-                    title: Text(userName),
+                    title: Text(
+                      userName,
+                      style: TextStyle(
+                        fontSize: screenWidth * 0.045,
+                        fontWeight: FontWeight.w600,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                     subtitle: Text(
                       'Matched on ${match.timestamp.toDate().toLocal().toString().split(".").first}',
-                      style: const TextStyle(fontSize: 13),
+                      style: TextStyle(fontSize: screenWidth * 0.035),
                     ),
                     trailing: unreadCount > 0
                         ? Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: screenWidth * 0.025,
+                              vertical: screenHeight * 0.005,
                             ),
                             decoration: BoxDecoration(
                               color: Colors.red,
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(
+                                screenWidth * 0.04,
+                              ),
                             ),
                             child: Text(
                               '$unreadCount',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 12,
+                                fontSize: screenWidth * 0.035,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                           )
-                        : const Icon(Icons.chevron_right, color: Colors.grey),
+                        : Icon(
+                            Icons.chevron_right,
+                            color: Colors.grey,
+                            size: screenWidth * 0.07,
+                          ),
                     onTap: () => _openChat(matchUserId),
                   );
                 },

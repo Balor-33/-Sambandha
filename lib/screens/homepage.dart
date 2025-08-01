@@ -44,7 +44,8 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
   final FirebaseUserService _firebaseUserService = FirebaseUserService();
   StreamSubscription<List<UserAction>>? _matchSubscription;
   final Set<String> _processedMatchIds = {};
-  final Set<String> _shownMatchUserIds = {}; // Track users who already had match dialog shown
+  final Set<String> _shownMatchUserIds =
+      {}; // Track users who already had match dialog shown
   final List<UserAction> _matches = [];
   bool _showMatchDialog = false;
   String? _matchedUserName;
@@ -91,85 +92,67 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
       vsync: this,
     );
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.03),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _slideController,
-        curve: Curves.easeOutQuart,
-      ),
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.03), end: Offset.zero).animate(
+          CurvedAnimation(parent: _slideController, curve: Curves.easeOutQuart),
+        );
+
+    _scaleAnimation = Tween<double>(begin: 0.99, end: 1.0).animate(
+      CurvedAnimation(parent: _cardController, curve: Curves.easeOutCubic),
     );
 
-    _scaleAnimation = Tween<double>(
-      begin: 0.99,
-      end: 1.0,
-    ).animate(
-      CurvedAnimation(
-        parent: _cardController,
-        curve: Curves.easeOutCubic,
-      ),
-    );
-
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _cardController,
         curve: const Interval(0.0, 0.8, curve: Curves.easeOut),
       ),
     );
 
-    _flashAnimation = Tween<double>(
-      begin: 0.0,
-      end: 0.3,
-    ).animate(
-      CurvedAnimation(
-        parent: _flashController,
-        curve: Curves.easeInOutCubic,
-      ),
+    _flashAnimation = Tween<double>(begin: 0.0, end: 0.3).animate(
+      CurvedAnimation(parent: _flashController, curve: Curves.easeInOutCubic),
     );
 
-    _passButtonScaleAnimation = TweenSequence<double>([
-      TweenSequenceItem(
-        tween: Tween<double>(begin: 1.0, end: 0.95),
-        weight: 40,
-      ),
-      TweenSequenceItem(
-        tween: Tween<double>(begin: 0.95, end: 1.05),
-        weight: 30,
-      ),
-      TweenSequenceItem(
-        tween: Tween<double>(begin: 1.05, end: 1.0),
-        weight: 30,
-      ),
-    ]).animate(
-      CurvedAnimation(
-        parent: _passButtonController,
-        curve: Curves.easeOutCubic,
-      ),
-    );
+    _passButtonScaleAnimation =
+        TweenSequence<double>([
+          TweenSequenceItem(
+            tween: Tween<double>(begin: 1.0, end: 0.95),
+            weight: 40,
+          ),
+          TweenSequenceItem(
+            tween: Tween<double>(begin: 0.95, end: 1.05),
+            weight: 30,
+          ),
+          TweenSequenceItem(
+            tween: Tween<double>(begin: 1.05, end: 1.0),
+            weight: 30,
+          ),
+        ]).animate(
+          CurvedAnimation(
+            parent: _passButtonController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
 
-    _likeButtonScaleAnimation = TweenSequence<double>([
-      TweenSequenceItem(
-        tween: Tween<double>(begin: 1.0, end: 0.95),
-        weight: 40,
-      ),
-      TweenSequenceItem(
-        tween: Tween<double>(begin: 0.95, end: 1.05),
-        weight: 30,
-      ),
-      TweenSequenceItem(
-        tween: Tween<double>(begin: 1.05, end: 1.0),
-        weight: 30,
-      ),
-    ]).animate(
-      CurvedAnimation(
-        parent: _likeButtonController,
-        curve: Curves.easeOutCubic,
-      ),
-    );
+    _likeButtonScaleAnimation =
+        TweenSequence<double>([
+          TweenSequenceItem(
+            tween: Tween<double>(begin: 1.0, end: 0.95),
+            weight: 40,
+          ),
+          TweenSequenceItem(
+            tween: Tween<double>(begin: 0.95, end: 1.05),
+            weight: 30,
+          ),
+          TweenSequenceItem(
+            tween: Tween<double>(begin: 1.05, end: 1.0),
+            weight: 30,
+          ),
+        ]).animate(
+          CurvedAnimation(
+            parent: _likeButtonController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
   }
 
   Future<void> _loadRecommendedUsers() async {
@@ -365,11 +348,14 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
     _likeButtonController.dispose();
     _pulseController?.dispose();
 
-    _matchSubscription?.cancel().then((_) {
-      print('Match subscription cancelled successfully');
-    }).catchError((error) {
-      print('Error cancelling match subscription: $error');
-    });
+    _matchSubscription
+        ?.cancel()
+        .then((_) {
+          print('Match subscription cancelled successfully');
+        })
+        .catchError((error) {
+          print('Error cancelling match subscription: $error');
+        });
 
     super.dispose();
   }
@@ -426,7 +412,7 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
 
   Future<void> _nextProfile() async {
     if (_isAnimating) return;
-    
+
     setState(() {
       _isAnimating = true;
     });
@@ -512,7 +498,7 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
         // Check if we've already shown dialog for this user
         if (!_shownMatchUserIds.contains(targetUserId)) {
           _shownMatchUserIds.add(targetUserId); // Mark as shown
-          
+
           await _loadMatchedUserProfilePicture(targetUserId);
 
           if (mounted) {
@@ -667,44 +653,17 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    
+    final screenHeight = MediaQuery.of(context).size.height;
+
     return RepaintBoundary(
       child: Stack(
         children: [
           Scaffold(
             backgroundColor: const Color(0xFFFAFAFA),
-            appBar: AppBar(
-              title: Text(
-                'Discover',
-                style: TextStyle(
-                  fontSize: screenWidth * 0.07,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF2C2C2C),
-                ),
-              ),
-              centerTitle: true,
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              actions: [
-                IconButton(
-                  icon: Icon(
-                    Icons.refresh, 
-                    color: const Color(0xFF2C2C2C),
-                    size: screenWidth * 0.06,
-                  ),
-                  onPressed: _isAnimating ? null : _loadRecommendedUsers,
-                ),
-                IconButton(
-                  icon: Icon(
-                    Icons.tune, 
-                    color: const Color(0xFF2C2C2C),
-                    size: screenWidth * 0.06,
-                  ),
-                  onPressed: () {},
-                ),
-              ],
-            ),
-            body: _selectedIndex == 0 ? _buildDiscoverPage() : _buildOtherPages(),
+
+            body: _selectedIndex == 0
+                ? _buildDiscoverPage(screenWidth, screenHeight)
+                : _buildOtherPages(),
             bottomNavigationBar: Container(
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -729,46 +688,24 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
                 items: [
                   BottomNavigationBarItem(
                     icon: Icon(
-                      Icons.explore_outlined, 
-                      size: screenWidth * 0.06
+                      Icons.explore_outlined,
+                      size: screenWidth * 0.06,
                     ),
-                    activeIcon: Icon(
-                      Icons.explore, 
-                      size: screenWidth * 0.06
-                    ),
+                    activeIcon: Icon(Icons.explore, size: screenWidth * 0.06),
                     label: "Explore",
                   ),
                   BottomNavigationBarItem(
                     icon: Icon(
-                      Icons.favorite_outline, 
-                      size: screenWidth * 0.06
+                      Icons.favorite_outline,
+                      size: screenWidth * 0.06,
                     ),
-                    activeIcon: Icon(
-                      Icons.favorite, 
-                      size: screenWidth * 0.06
-                    ),
+                    activeIcon: Icon(Icons.favorite, size: screenWidth * 0.06),
                     label: 'Matches',
                   ),
+
                   BottomNavigationBarItem(
-                    icon: Icon(
-                      Icons.chat_bubble_outline, 
-                      size: screenWidth * 0.06
-                    ),
-                    activeIcon: Icon(
-                      Icons.chat_bubble, 
-                      size: screenWidth * 0.06
-                    ),
-                    label: "Chat",
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(
-                      Icons.person_outline, 
-                      size: screenWidth * 0.06
-                    ),
-                    activeIcon: Icon(
-                      Icons.person, 
-                      size: screenWidth * 0.06
-                    ),
+                    icon: Icon(Icons.person_outline, size: screenWidth * 0.06),
+                    activeIcon: Icon(Icons.person, size: screenWidth * 0.06),
                     label: "Profile",
                   ),
                 ],
@@ -782,10 +719,8 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildDiscoverPage() {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-    
+  // Responsive Discover Page
+  Widget _buildDiscoverPage(double screenWidth, double screenHeight) {
     if (_isLoading) {
       return Center(
         child: Column(
@@ -799,8 +734,8 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
             Text(
               'Finding your perfect matches...',
               style: TextStyle(
-                fontSize: screenWidth * 0.04, 
-                color: const Color(0xFF2C2C2C)
+                fontSize: screenWidth * 0.04,
+                color: const Color(0xFF2C2C2C),
               ),
             ),
           ],
@@ -816,9 +751,9 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
-                Icons.error_outline, 
-                size: screenWidth * 0.16, 
-                color: Colors.grey.shade400
+                Icons.error_outline,
+                size: screenWidth * 0.16,
+                color: Colors.grey.shade400,
               ),
               SizedBox(height: screenHeight * 0.02),
               Text(
@@ -834,8 +769,8 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
                 _errorMessage!,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: screenWidth * 0.035, 
-                  color: Colors.grey.shade500
+                  fontSize: screenWidth * 0.035,
+                  color: Colors.grey.shade500,
                 ),
               ),
               SizedBox(height: screenHeight * 0.03),
@@ -894,9 +829,9 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.favorite_outline, 
-              size: screenWidth * 0.16, 
-              color: Colors.grey.shade400
+              Icons.favorite_outline,
+              size: screenWidth * 0.16,
+              color: Colors.grey.shade400,
             ),
             SizedBox(height: screenHeight * 0.02),
             Text(
@@ -912,8 +847,8 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
               'Try updating your preferences or check back later',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: screenWidth * 0.035, 
-                color: Colors.grey
+                fontSize: screenWidth * 0.035,
+                color: Colors.grey,
               ),
             ),
             SizedBox(height: screenHeight * 0.03),
@@ -960,9 +895,9 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      Icons.stars, 
-                      size: screenWidth * 0.04, 
-                      color: const Color(0xFFFF4458)
+                      Icons.stars,
+                      size: screenWidth * 0.04,
+                      color: const Color(0xFFFF4458),
                     ),
                     SizedBox(width: screenWidth * 0.01),
                     Text(
@@ -1001,7 +936,11 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
             child: Center(
               child: RepaintBoundary(
                 child: AnimatedBuilder(
-                  animation: Listenable.merge([_slideAnimation, _scaleAnimation, _fadeAnimation]),
+                  animation: Listenable.merge([
+                    _slideAnimation,
+                    _scaleAnimation,
+                    _fadeAnimation,
+                  ]),
                   builder: (context, child) {
                     return Transform.translate(
                       offset: _slideAnimation.value * screenHeight * 0.1,
@@ -1014,9 +953,13 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
                             child: Container(
                               width: double.infinity,
                               height: screenHeight * 0.65,
-                              margin: const EdgeInsets.symmetric(vertical: 20),
+                              margin: EdgeInsets.symmetric(
+                                vertical: screenHeight * 0.025,
+                              ),
                               decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(24),
+                                borderRadius: BorderRadius.circular(
+                                  screenWidth * 0.06,
+                                ),
                                 boxShadow: [
                                   BoxShadow(
                                     color: Colors.black.withOpacity(0.15),
@@ -1026,10 +969,14 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
                                 ],
                               ),
                               child: ClipRRect(
-                                borderRadius: BorderRadius.circular(24),
+                                borderRadius: BorderRadius.circular(
+                                  screenWidth * 0.06,
+                                ),
                                 child: Stack(
                                   children: [
-                                    _buildProfileImage(currentUser.profilePicture),
+                                    _buildProfileImage(
+                                      currentUser.profilePicture,
+                                    ),
                                     if (_isFlashing)
                                       AnimatedBuilder(
                                         animation: _flashAnimation,
@@ -1060,7 +1007,8 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
                                           ),
                                         ),
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
                                             Row(
@@ -1071,7 +1019,8 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
                                                     style: const TextStyle(
                                                       color: Colors.white,
                                                       fontSize: 32,
-                                                      fontWeight: FontWeight.bold,
+                                                      fontWeight:
+                                                          FontWeight.bold,
                                                     ),
                                                   ),
                                                 ),
@@ -1087,7 +1036,9 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
                                               ],
                                             ),
                                             const SizedBox(height: 8),
-                                            if (currentUser.targetRelation.isNotEmpty)
+                                            if (currentUser
+                                                .targetRelation
+                                                .isNotEmpty)
                                               Row(
                                                 children: [
                                                   const Icon(
@@ -1101,18 +1052,22 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
                                                     style: const TextStyle(
                                                       color: Colors.white70,
                                                       fontSize: 16,
-                                                      fontWeight: FontWeight.w400,
+                                                      fontWeight:
+                                                          FontWeight.w400,
                                                     ),
                                                   ),
                                                 ],
                                               ),
                                             if (currentUser.distanceKm != null)
                                               Padding(
-                                                padding: const EdgeInsets.only(top: 4),
+                                                padding: const EdgeInsets.only(
+                                                  top: 4,
+                                                ),
                                                 child: Row(
                                                   children: [
                                                     const Icon(
-                                                      Icons.location_on_outlined,
+                                                      Icons
+                                                          .location_on_outlined,
                                                       color: Colors.white70,
                                                       size: 18,
                                                     ),
@@ -1122,7 +1077,8 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
                                                       style: const TextStyle(
                                                         color: Colors.white70,
                                                         fontSize: 16,
-                                                        fontWeight: FontWeight.w400,
+                                                        fontWeight:
+                                                            FontWeight.w400,
                                                       ),
                                                     ),
                                                   ],
@@ -1136,7 +1092,10 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
                                                 runSpacing: 4,
                                                 children: currentUser.hobbies
                                                     .take(3)
-                                                    .map((hobby) => _buildTag(hobby))
+                                                    .map(
+                                                      (hobby) =>
+                                                          _buildTag(hobby),
+                                                    )
                                                     .toList(),
                                               ),
                                           ],
@@ -1152,17 +1111,24 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
                                           _recommendedUsers.length.clamp(0, 5),
                                           (index) => Expanded(
                                             child: AnimatedContainer(
-                                              duration: const Duration(milliseconds: 300),
+                                              duration: const Duration(
+                                                milliseconds: 300,
+                                              ),
                                               curve: Curves.easeInOut,
                                               height: 4,
                                               margin: EdgeInsets.only(
                                                 right: index < 4 ? 6 : 0,
                                               ),
                                               decoration: BoxDecoration(
-                                                color: index <= _currentProfileIndex
+                                                color:
+                                                    index <=
+                                                        _currentProfileIndex
                                                     ? Colors.white
-                                                    : Colors.white.withOpacity(0.3),
-                                                borderRadius: BorderRadius.circular(2),
+                                                    : Colors.white.withOpacity(
+                                                        0.3,
+                                                      ),
+                                                borderRadius:
+                                                    BorderRadius.circular(2),
                                               ),
                                             ),
                                           ),
@@ -1179,7 +1145,9 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
                                         ),
                                         decoration: BoxDecoration(
                                           color: Colors.black.withOpacity(0.6),
-                                          borderRadius: BorderRadius.circular(20),
+                                          borderRadius: BorderRadius.circular(
+                                            20,
+                                          ),
                                         ),
                                         child: const Row(
                                           mainAxisSize: MainAxisSize.min,
@@ -1216,7 +1184,7 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.only(bottom: 20),
+            padding: EdgeInsets.only(bottom: screenHeight * 0.025),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -1229,7 +1197,7 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
                         icon: Icons.close,
                         color: const Color(0xFFFF4458),
                         onTap: _passAction,
-                        size: 90,
+                        size: screenWidth * 0.18,
                         isEnabled: !_isAnimating,
                       ),
                     );
@@ -1244,7 +1212,7 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
                         icon: Icons.favorite,
                         color: const Color(0xFFFF4458),
                         onTap: _likeAction,
-                        size: 90,
+                        size: screenWidth * 0.18,
                         isEnabled: !_isAnimating,
                       ),
                     );
@@ -1311,105 +1279,20 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
   }
 
   Widget _buildOtherPages() {
-    switch (_selectedIndex) {
-      case 1:
-        return MatchesScreen(
-          onChat: (matchUserId, matchUserName) {
-            // TODO: Navigate to chat screen with matchUserId
-          },
-        );
-      case 2:
-        return Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(_getPageIcon(), size: 64, color: const Color(0xFFFF4458)),
-              const SizedBox(height: 16),
-              Text(
-                _getPageTitle(),
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF2C2C2C),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Coming soon...',
-                style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
-              ),
-            ],
-          ),
-        );
-      case 3:
-        return Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(_getPageIcon(), size: 64, color: const Color(0xFFFF4458)),
-              const SizedBox(height: 16),
-              Text(
-                _getPageTitle(),
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF2C2C2C),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Coming soon...',
-                style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
-              ),
-            ],
-          ),
-        );
-      default:
-        return Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(_getPageIcon(), size: 64, color: const Color(0xFFFF4458)),
-              const SizedBox(height: 16),
-              Text(
-                _getPageTitle(),
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF2C2C2C),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Coming soon...',
-                style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
-              ),
-            ],
-          ),
-        );
-    }
-  }
-
-  IconData _getPageIcon() {
-    switch (_selectedIndex) {
-      case 1:
-        return Icons.favorite;
-      case 2:
-        return Icons.chat_bubble;
-      case 3:
-        return Icons.person;
-      default:
-        return Icons.explore;
-    }
+    return Center(
+      child: Text(
+        'Page: ${_getPageTitle()}',
+        style: TextStyle(fontSize: 24, color: Colors.black54),
+      ),
+    );
   }
 
   String _getPageTitle() {
     switch (_selectedIndex) {
       case 1:
         return 'Matches';
+
       case 2:
-        return 'Chat';
-      case 3:
         return 'Profile';
       default:
         return 'Explore';
@@ -1446,13 +1329,20 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
                         height: 80,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          border: Border.all(color: Colors.grey.shade300, width: 3),
+                          border: Border.all(
+                            color: Colors.grey.shade300,
+                            width: 3,
+                          ),
                         ),
                         child: ClipOval(
                           child: _currentUserProfilePicture != null
-                              ? _buildCircularProfilePicture(_currentUserProfilePicture!)
+                              ? _buildCircularProfilePicture(
+                                  _currentUserProfilePicture!,
+                                )
                               : Container(
-                                  color: const Color(0xFFFF4458).withOpacity(0.1),
+                                  color: const Color(
+                                    0xFFFF4458,
+                                  ).withOpacity(0.1),
                                   child: const Icon(
                                     Icons.person,
                                     size: 40,
@@ -1483,13 +1373,20 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
                         height: 80,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          border: Border.all(color: Colors.grey.shade300, width: 3),
+                          border: Border.all(
+                            color: Colors.grey.shade300,
+                            width: 3,
+                          ),
                         ),
                         child: ClipOval(
                           child: _matchedUserProfilePicture != null
-                              ? _buildCircularProfilePicture(_matchedUserProfilePicture!)
+                              ? _buildCircularProfilePicture(
+                                  _matchedUserProfilePicture!,
+                                )
                               : Container(
-                                  color: const Color(0xFFFF4458).withOpacity(0.1),
+                                  color: const Color(
+                                    0xFFFF4458,
+                                  ).withOpacity(0.1),
                                   child: const Icon(
                                     Icons.person,
                                     size: 40,
@@ -1515,10 +1412,7 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
                   Text(
                     'You and $matchedUserName liked each other.',
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey,
-                    ),
+                    style: const TextStyle(fontSize: 16, color: Colors.grey),
                   ),
                   const SizedBox(height: 30),
                   // Buttons
@@ -1535,26 +1429,9 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
                               _matchedUserProfilePicture = null;
                             });
                           },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFFF4458),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(25),
-                            ),
-                          ),
+
                           child: const Row(
                             mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.chat, color: Colors.white),
-                              SizedBox(width: 8),
-                              Text(
-                                'Start Chatting',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
                           ),
                         ),
                       ),
@@ -1614,11 +1491,7 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
     } catch (e) {
       return Container(
         color: const Color(0xFFFF4458).withOpacity(0.1),
-        child: const Icon(
-          Icons.person,
-          size: 40,
-          color: Color(0xFFFF4458),
-        ),
+        child: const Icon(Icons.person, size: 40, color: Color(0xFFFF4458)),
       );
     }
   }
@@ -1654,25 +1527,20 @@ class _DetailedProfilePageState extends State<DetailedProfilePage>
       vsync: this,
     );
 
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
         curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
       ),
     );
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.1),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.3, 1.0, curve: Curves.easeOutCubic),
-      ),
-    );
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: const Interval(0.3, 1.0, curve: Curves.easeOutCubic),
+          ),
+        );
 
     _controller.forward();
   }
@@ -1891,8 +1759,6 @@ class _DetailedProfilePageState extends State<DetailedProfilePage>
     );
   }
 
- 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -2029,7 +1895,8 @@ class _DetailedProfilePageState extends State<DetailedProfilePage>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (widget.user.aboutMe != null && widget.user.aboutMe!.isNotEmpty)
+                  if (widget.user.aboutMe != null &&
+                      widget.user.aboutMe!.isNotEmpty)
                     _buildInfoCard(
                       icon: Icons.person_outline,
                       title: 'About Me',
@@ -2045,7 +1912,8 @@ class _DetailedProfilePageState extends State<DetailedProfilePage>
                     _buildInfoCard(
                       icon: Icons.location_on_outlined,
                       title: 'Distance',
-                      content: '${widget.user.distanceKm!.toStringAsFixed(1)} km away',
+                      content:
+                          '${widget.user.distanceKm!.toStringAsFixed(1)} km away',
                     ),
                   _buildHobbiesSection(),
                   const SizedBox(height: 20),
@@ -2056,15 +1924,13 @@ class _DetailedProfilePageState extends State<DetailedProfilePage>
         ),
       ),
       bottomNavigationBar: SlideTransition(
-        position: Tween<Offset>(
-          begin: const Offset(0, 1),
-          end: Offset.zero,
-        ).animate(
-          CurvedAnimation(
-            parent: _controller,
-            curve: const Interval(0.6, 1.0, curve: Curves.easeOutCubic),
-          ),
-        ),
+        position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
+            .animate(
+              CurvedAnimation(
+                parent: _controller,
+                curve: const Interval(0.6, 1.0, curve: Curves.easeOutCubic),
+              ),
+            ),
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(

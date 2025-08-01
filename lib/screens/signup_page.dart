@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../services/firebase_auth.dart';
 
 class SignupPage extends StatefulWidget {
@@ -70,37 +71,40 @@ class _SignupPageState extends State<SignupPage> {
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Scaffold(
       backgroundColor: Colors.white,
       resizeToAvoidBottomInset: true,
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
+        padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.06),
         child: Form(
           key: _formKey,
           child: ConstrainedBox(
             constraints: BoxConstraints(
               minHeight:
-                  MediaQuery.of(context).size.height -
+                  screenHeight -
                   MediaQuery.of(context).padding.top -
                   kToolbarHeight,
             ),
             child: IntrinsicHeight(
               child: Column(
                 children: [
-                  const SizedBox(height: 40),
+                  SizedBox(height: screenHeight * 0.05),
                   // Logo
                   Container(
-                    width: 240,
-                    height: 240,
+                    width: screenWidth * 0.6,
+                    height: screenWidth * 0.6,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Padding(
-                      padding: const EdgeInsets.all(12),
+                      padding: EdgeInsets.all(screenWidth * 0.03),
                       child: Image.asset('assets/images/logo.png'),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: screenHeight * 0.02),
                   const Text(
                     'Create an account',
                     style: TextStyle(
@@ -109,13 +113,13 @@ class _SignupPageState extends State<SignupPage> {
                       color: Colors.black87,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: screenHeight * 0.01),
                   Text(
                     'Enter your email to sign up for SAMBANDHA',
                     style: TextStyle(fontSize: 16, color: Colors.grey),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 40),
+                  SizedBox(height: screenHeight * 0.05),
 
                   /// EMAIL FIELD
                   TextFormField(
@@ -130,9 +134,9 @@ class _SignupPageState extends State<SignupPage> {
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 16,
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: screenWidth * 0.04,
+                        vertical: screenHeight * 0.02,
                       ),
                     ),
                     validator: (value) {
@@ -148,12 +152,12 @@ class _SignupPageState extends State<SignupPage> {
 
                   _errorMessage(),
 
-                  const SizedBox(height: 24),
+                  SizedBox(height: screenHeight * 0.03),
 
                   /// CONTINUE BUTTON
                   SizedBox(
                     width: double.infinity,
-                    height: 56,
+                    height: screenHeight * 0.07,
                     child: ElevatedButton(
                       onPressed: _loading ? null : _continue,
                       style: ElevatedButton.styleFrom(
@@ -175,12 +179,14 @@ class _SignupPageState extends State<SignupPage> {
                     ),
                   ),
 
-                  const SizedBox(height: 24),
+                  SizedBox(height: screenHeight * 0.03),
                   Row(
                     children: [
                       Expanded(child: Divider(color: Colors.grey[300])),
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: screenWidth * 0.04,
+                        ),
                         child: Text(
                           'or',
                           style: TextStyle(
@@ -192,17 +198,20 @@ class _SignupPageState extends State<SignupPage> {
                       Expanded(child: Divider(color: Colors.grey[300])),
                     ],
                   ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: screenHeight * 0.03),
 
                   /// GOOGLE BUTTON
                   const Spacer(),
                   Padding(
-                    padding: const EdgeInsets.only(bottom: 40, top: 20),
+                    padding: EdgeInsets.only(
+                      bottom: screenHeight * 0.05,
+                      top: screenHeight * 0.025,
+                    ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         _link('Terms of Service'),
-                        const SizedBox(width: 16),
+                        SizedBox(width: screenWidth * 0.04),
                         _link('Privacy Policy'),
                       ],
                     ),

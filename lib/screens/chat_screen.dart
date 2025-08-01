@@ -3,9 +3,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:convert';
 
-// Make sure to import your updated ChatService
-// import 'chat_service.dart';
-
 class ChatScreen extends StatefulWidget {
   final String chatId;
   final String otherUserId;
@@ -30,13 +27,9 @@ class _ChatScreenState extends State<ChatScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // Use ChatService for better error handling
-  // late final ChatService _chatService;
-
   @override
   void initState() {
     super.initState();
-    // _chatService = ChatService();
     _ensureChatExists();
   }
 
@@ -136,8 +129,13 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final profilePicRadius = screenWidth * 0.055; // Responsive avatar size
+
     return Scaffold(
       backgroundColor: Colors.white,
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -148,29 +146,37 @@ class _ChatScreenState extends State<ChatScreen> {
         title: Row(
           children: [
             CircleAvatar(
-              radius: 20,
+              radius: profilePicRadius,
               backgroundImage: _getImageProvider(widget.otherUserImage),
               backgroundColor: Colors.grey.shade200,
               child: widget.otherUserImage.isEmpty
-                  ? const Icon(Icons.person, color: Colors.grey)
+                  ? Icon(
+                      Icons.person,
+                      color: Colors.grey,
+                      size: profilePicRadius,
+                    )
                   : null,
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: screenWidth * 0.03),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     widget.otherUserName,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.black,
-                      fontSize: 18,
+                      fontSize: screenWidth * 0.045,
                       fontWeight: FontWeight.w600,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const Text(
+                  Text(
                     'Active now',
-                    style: TextStyle(color: Colors.grey, fontSize: 12),
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontSize: screenWidth * 0.03,
+                    ),
                   ),
                 ],
               ),
@@ -179,13 +185,21 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.videocam_outlined, color: Colors.grey),
+            icon: Icon(
+              Icons.videocam_outlined,
+              color: Colors.grey,
+              size: screenWidth * 0.06,
+            ),
             onPressed: () {
               // Video call functionality
             },
           ),
           IconButton(
-            icon: const Icon(Icons.phone_outlined, color: Colors.grey),
+            icon: Icon(
+              Icons.phone_outlined,
+              color: Colors.grey,
+              size: screenWidth * 0.06,
+            ),
             onPressed: () {
               // Voice call functionality
             },
@@ -204,21 +218,20 @@ class _ChatScreenState extends State<ChatScreen> {
                   .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
-                  print('Stream error: ${snapshot.error}');
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.error_outline,
-                          size: 48,
+                          size: screenWidth * 0.12,
                           color: Colors.red,
                         ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: screenHeight * 0.02),
                         Text('Error: ${snapshot.error}'),
-                        const SizedBox(height: 16),
+                        SizedBox(height: screenHeight * 0.02),
                         ElevatedButton(
-                          onPressed: () => setState(() {}), // Trigger rebuild
+                          onPressed: () => setState(() {}),
                           child: const Text('Retry'),
                         ),
                       ],
@@ -238,31 +251,34 @@ class _ChatScreenState extends State<ChatScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         CircleAvatar(
-                          radius: 50,
+                          radius: screenWidth * 0.13,
                           backgroundImage: _getImageProvider(
                             widget.otherUserImage,
                           ),
                           backgroundColor: Colors.grey.shade200,
                           child: widget.otherUserImage.isEmpty
-                              ? const Icon(
+                              ? Icon(
                                   Icons.person,
                                   color: Colors.grey,
-                                  size: 50,
+                                  size: screenWidth * 0.13,
                                 )
                               : null,
                         ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: screenHeight * 0.02),
                         Text(
                           'You matched with ${widget.otherUserName}!',
-                          style: const TextStyle(
-                            fontSize: 20,
+                          style: TextStyle(
+                            fontSize: screenWidth * 0.05,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        const Text(
+                        SizedBox(height: screenHeight * 0.01),
+                        Text(
                           'Start the conversation with a friendly message!',
-                          style: TextStyle(color: Colors.grey, fontSize: 16),
+                          style: TextStyle(
+                            color: Colors.grey,
+                            fontSize: screenWidth * 0.04,
+                          ),
                           textAlign: TextAlign.center,
                         ),
                       ],
@@ -283,7 +299,10 @@ class _ChatScreenState extends State<ChatScreen> {
 
                 return ListView.builder(
                   controller: _scrollController,
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: screenWidth * 0.03,
+                    vertical: screenHeight * 0.01,
+                  ),
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
                     final messageDoc = messages[index];
@@ -294,13 +313,15 @@ class _ChatScreenState extends State<ChatScreen> {
                       message['text'] ?? '',
                       isMe,
                       message['timestamp'] as Timestamp?,
+                      screenWidth,
+                      screenHeight,
                     );
                   },
                 );
               },
             ),
           ),
-          _buildMessageInput(),
+          _buildMessageInput(screenWidth, screenHeight),
         ],
       ),
     );
@@ -336,9 +357,15 @@ class _ChatScreenState extends State<ChatScreen> {
     return null;
   }
 
-  Widget _buildMessageBubble(String message, bool isMe, Timestamp? timestamp) {
+  Widget _buildMessageBubble(
+    String message,
+    bool isMe,
+    Timestamp? timestamp,
+    double screenWidth,
+    double screenHeight,
+  ) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.only(bottom: screenHeight * 0.012),
       child: Row(
         mainAxisAlignment: isMe
             ? MainAxisAlignment.end
@@ -347,18 +374,25 @@ class _ChatScreenState extends State<ChatScreen> {
         children: [
           if (!isMe) ...[
             CircleAvatar(
-              radius: 16,
+              radius: screenWidth * 0.045,
               backgroundImage: _getImageProvider(widget.otherUserImage),
               backgroundColor: Colors.grey.shade200,
               child: widget.otherUserImage.isEmpty
-                  ? const Icon(Icons.person, color: Colors.grey, size: 16)
+                  ? Icon(
+                      Icons.person,
+                      color: Colors.grey,
+                      size: screenWidth * 0.045,
+                    )
                   : null,
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: screenWidth * 0.02),
           ],
           Flexible(
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: EdgeInsets.symmetric(
+                horizontal: screenWidth * 0.04,
+                vertical: screenHeight * 0.015,
+              ),
               decoration: BoxDecoration(
                 color: isMe ? const Color(0xFFFF4458) : Colors.grey[200],
                 borderRadius: BorderRadius.only(
@@ -372,19 +406,23 @@ class _ChatScreenState extends State<ChatScreen> {
                 message,
                 style: TextStyle(
                   color: isMe ? Colors.white : Colors.black,
-                  fontSize: 16,
+                  fontSize: screenWidth * 0.042,
                 ),
               ),
             ),
           ),
           if (isMe) ...[
-            const SizedBox(width: 8),
+            SizedBox(width: screenWidth * 0.02),
             CircleAvatar(
-              radius: 16,
+              radius: screenWidth * 0.045,
               backgroundImage: _getCurrentUserImageProvider(),
               backgroundColor: Colors.grey.shade200,
               child: _auth.currentUser?.photoURL?.isEmpty != false
-                  ? const Icon(Icons.person, color: Colors.grey, size: 16)
+                  ? Icon(
+                      Icons.person,
+                      color: Colors.grey,
+                      size: screenWidth * 0.045,
+                    )
                   : null,
             ),
           ],
@@ -393,76 +431,84 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  Widget _buildMessageInput() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(25),
-              ),
-              child: TextField(
-                controller: _messageController,
-                decoration: const InputDecoration(
-                  hintText: 'Type a message...',
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 12,
-                  ),
+  Widget _buildMessageInput(double screenWidth, double screenHeight) {
+    return SafeArea(
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: screenWidth * 0.03,
+          vertical: screenHeight * 0.012,
+        ),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(screenWidth * 0.07),
                 ),
-                textInputAction: TextInputAction.send,
-                onSubmitted: (_) => _sendMessage(),
-                maxLength: 1000, // Match security rules limit
-                buildCounter:
-                    (
-                      context, {
-                      required currentLength,
-                      required isFocused,
-                      maxLength,
-                    }) {
-                      // Hide counter unless close to limit
-                      if (currentLength > 900) {
-                        return Text(
-                          '$currentLength/$maxLength',
-                          style: TextStyle(
-                            color: currentLength >= maxLength!
-                                ? Colors.red
-                                : Colors.grey,
-                            fontSize: 12,
-                          ),
-                        );
-                      }
-                      return null;
-                    },
+                child: TextField(
+                  controller: _messageController,
+                  decoration: InputDecoration(
+                    hintText: 'Type a message...',
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: screenWidth * 0.04,
+                      vertical: screenHeight * 0.016,
+                    ),
+                  ),
+                  textInputAction: TextInputAction.send,
+                  onSubmitted: (_) => _sendMessage(),
+                  maxLength: 1000,
+                  buildCounter:
+                      (
+                        context, {
+                        required currentLength,
+                        required isFocused,
+                        maxLength,
+                      }) {
+                        if (currentLength > 900) {
+                          return Text(
+                            '$currentLength/$maxLength',
+                            style: TextStyle(
+                              color: currentLength >= maxLength!
+                                  ? Colors.red
+                                  : Colors.grey,
+                              fontSize: screenWidth * 0.03,
+                            ),
+                          );
+                        }
+                        return null;
+                      },
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            decoration: const BoxDecoration(
-              color: Color(0xFFFF4458),
-              shape: BoxShape.circle,
+            SizedBox(width: screenWidth * 0.02),
+            Container(
+              decoration: const BoxDecoration(
+                color: Color(0xFFFF4458),
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                onPressed: _sendMessage,
+                icon: Icon(
+                  Icons.send,
+                  color: Colors.white,
+                  size: screenWidth * 0.06,
+                ),
+              ),
             ),
-            child: IconButton(
-              onPressed: _sendMessage,
-              icon: const Icon(Icons.send, color: Colors.white),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

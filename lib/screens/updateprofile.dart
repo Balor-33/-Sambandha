@@ -70,7 +70,7 @@ class _UpdateProfilePageState extends State<UpdateProfilePage>
   static const Color textPrimary = Color(0xFF2D3748);
   static const Color textSecondary = Color(0xFF718096);
   static const Color glassColor = Color(0xFFFFFFFF);
-  
+
   // Hobbies list with better colors
   final List<Map<String, dynamic>> _availableHobbies = [
     {'name': 'Reading', 'icon': Icons.book, 'color': const Color(0xFF6C63FF)},
@@ -205,11 +205,7 @@ class _UpdateProfilePageState extends State<UpdateProfilePage>
   Future<void> _logout() async {
     await _auth.signOut();
     if (mounted) {
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        '/welcome',
-        (route) => false,
-      );
+      Navigator.pushNamedAndRemoveUntil(context, '/welcome', (route) => false);
     }
   }
 
@@ -1767,7 +1763,7 @@ class _UpdateProfilePageState extends State<UpdateProfilePage>
                                   ),
                                 ),
                               ),
-                              
+
                               const SizedBox(height: 60),
                             ],
                           ),

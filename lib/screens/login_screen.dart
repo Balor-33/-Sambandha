@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'signup_page.dart';
 import '../services/firebase_auth.dart';
 import 'homepage.dart';
@@ -9,31 +10,32 @@ class WelcomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
+        padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.06),
         child: ConstrainedBox(
-          constraints: BoxConstraints(
-            minHeight: MediaQuery.of(context).size.height,
-          ),
+          constraints: BoxConstraints(minHeight: screenHeight),
           child: IntrinsicHeight(
             child: Column(
               children: [
-                const SizedBox(height: 80),
+                SizedBox(height: screenHeight * 0.10),
                 // Logo
                 Container(
-                  width: 240,
-                  height: 240,
+                  width: screenWidth * 0.6,
+                  height: screenWidth * 0.6,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.all(12),
+                    padding: EdgeInsets.all(screenWidth * 0.03),
                     child: Image.asset('assets/images/logo.png'),
                   ),
                 ),
-                const SizedBox(height: 32),
+                SizedBox(height: screenHeight * 0.04),
                 const Text(
                   'Welcome to SAMBANDHA',
                   style: TextStyle(
@@ -43,19 +45,19 @@ class WelcomePage extends StatelessWidget {
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: screenHeight * 0.015),
                 Text(
                   "आधुनिक सोच, साँचो भावना",
                   style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                   textAlign: TextAlign.center,
                 ),
                 const Spacer(),
-                const SizedBox(height: 60),
+                SizedBox(height: screenHeight * 0.08),
 
                 /// SIGN UP BUTTON
                 SizedBox(
                   width: double.infinity,
-                  height: 56,
+                  height: screenHeight * 0.07,
                   child: ElevatedButton(
                     onPressed: () {
                       Navigator.push(
@@ -82,12 +84,12 @@ class WelcomePage extends StatelessWidget {
                   ),
                 ),
 
-                const SizedBox(height: 16),
+                SizedBox(height: screenHeight * 0.02),
 
                 /// LOG IN BUTTON
                 SizedBox(
                   width: double.infinity,
-                  height: 56,
+                  height: screenHeight * 0.07,
                   child: OutlinedButton(
                     onPressed: () {
                       Navigator.push(
@@ -114,12 +116,14 @@ class WelcomePage extends StatelessWidget {
                   ),
                 ),
 
-                const SizedBox(height: 24),
+                SizedBox(height: screenHeight * 0.03),
                 Row(
                   children: [
                     Expanded(child: Divider(color: Colors.grey[300])),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: screenWidth * 0.04,
+                      ),
                       child: Text(
                         'or',
                         style: TextStyle(color: Colors.grey[500], fontSize: 14),
@@ -128,18 +132,18 @@ class WelcomePage extends StatelessWidget {
                     Expanded(child: Divider(color: Colors.grey[300])),
                   ],
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: screenHeight * 0.03),
 
-                const SizedBox(height: 40),
+                SizedBox(height: screenHeight * 0.05),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     _link('Terms of Service'),
-                    const SizedBox(width: 16),
+                    SizedBox(width: screenWidth * 0.04),
                     _link('Privacy Policy'),
                   ],
                 ),
-                const SizedBox(height: 40),
+                SizedBox(height: screenHeight * 0.05),
               ],
             ),
           ),
@@ -253,6 +257,9 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -278,20 +285,20 @@ class _LoginPageState extends State<LoginPage> {
             child: IntrinsicHeight(
               child: Column(
                 children: [
-                  const SizedBox(height: 40),
+                  SizedBox(height: screenHeight * 0.05),
                   // Logo
                   Container(
-                    width: 200,
-                    height: 200,
+                    width: screenWidth * 0.5,
+                    height: screenWidth * 0.5,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Padding(
-                      padding: const EdgeInsets.all(12),
+                      padding: EdgeInsets.all(screenWidth * 0.03),
                       child: Image.asset('assets/images/logo.png'),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: screenHeight * 0.02),
                   const Text(
                     'Welcome back',
                     style: TextStyle(
@@ -300,13 +307,13 @@ class _LoginPageState extends State<LoginPage> {
                       color: Colors.black87,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: screenHeight * 0.01),
                   Text(
                     'Sign in to your SAMBANDHA account',
                     style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 40),
+                  SizedBox(height: screenHeight * 0.05),
 
                   /// EMAIL FIELD
                   TextFormField(
@@ -337,7 +344,7 @@ class _LoginPageState extends State<LoginPage> {
                     },
                   ),
 
-                  const SizedBox(height: 16),
+                  SizedBox(height: screenHeight * 0.02),
 
                   /// PASSWORD FIELD
                   TextFormField(
@@ -378,7 +385,7 @@ class _LoginPageState extends State<LoginPage> {
                     },
                   ),
 
-                  const SizedBox(height: 8),
+                  SizedBox(height: screenHeight * 0.01),
 
                   /// FORGOT PASSWORD LINK
                   Align(
@@ -401,12 +408,12 @@ class _LoginPageState extends State<LoginPage> {
 
                   _errorMessage(),
 
-                  const SizedBox(height: 24),
+                  SizedBox(height: screenHeight * 0.03),
 
                   /// LOG IN BUTTON
                   SizedBox(
                     width: double.infinity,
-                    height: 56,
+                    height: screenHeight * 0.07,
                     child: ElevatedButton(
                       onPressed: _loading ? null : _login,
                       style: ElevatedButton.styleFrom(
@@ -428,7 +435,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
 
-                  const SizedBox(height: 24),
+                  SizedBox(height: screenHeight * 0.03),
                   Row(
                     children: [
                       Expanded(child: Divider(color: Colors.grey[300])),
@@ -445,7 +452,7 @@ class _LoginPageState extends State<LoginPage> {
                       Expanded(child: Divider(color: Colors.grey[300])),
                     ],
                   ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: screenHeight * 0.03),
 
                   const Spacer(),
 
@@ -568,6 +575,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -591,13 +601,13 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const SizedBox(height: 60),
+                SizedBox(height: screenHeight * 0.08),
                 Icon(
                   _emailSent ? Icons.check_circle_outline : Icons.lock_reset,
                   size: 80,
                   color: _emailSent ? Colors.green : Colors.black,
                 ),
-                const SizedBox(height: 32),
+                SizedBox(height: screenHeight * 0.04),
                 Text(
                   _emailSent ? 'Check your email' : 'Reset your password',
                   style: const TextStyle(
@@ -606,7 +616,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     color: Colors.black87,
                   ),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: screenHeight * 0.02),
                 Text(
                   _emailSent
                       ? 'We\'ve sent password reset instructions to:'
@@ -616,7 +626,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                 ),
 
                 if (_emailSent) ...[
-                  const SizedBox(height: 8),
+                  SizedBox(height: screenHeight * 0.02),
                   Text(
                     _emailController.text.trim(),
                     style: const TextStyle(
@@ -625,14 +635,14 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                       color: Colors.black,
                     ),
                   ),
-                  const SizedBox(height: 32),
+                  SizedBox(height: screenHeight * 0.04),
                   Text(
                     'Check your email and click the reset link to continue. You can close this page.',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                   ),
                 ] else ...[
-                  const SizedBox(height: 40),
+                  SizedBox(height: screenHeight * 0.05),
                   Form(
                     key: _formKey,
                     child: TextFormField(
@@ -666,11 +676,11 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
                   _errorMessage(),
 
-                  const SizedBox(height: 24),
+                  SizedBox(height: screenHeight * 0.03),
 
                   SizedBox(
                     width: double.infinity,
-                    height: 56,
+                    height: screenHeight * 0.07,
                     child: ElevatedButton(
                       onPressed: _loading ? null : _sendPasswordReset,
                       style: ElevatedButton.styleFrom(

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../model/profile_setup_data.dart';
 import '../widgets/next_button.dart';
-import 'package:intl/intl.dart';
 
 class BirthdayScreen extends StatefulWidget {
   const BirthdayScreen({super.key, required this.data});
@@ -81,70 +81,92 @@ class _BirthdayScreenState extends State<BirthdayScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        minimum: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const BackButton(),
-            const SizedBox(height: 32),
-            const Text(
-              'Your b-day?',
-              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 32),
-            GestureDetector(
-              onTap: _pick,
-              child: AbsorbPointer(
-                child: TextField(
-                  readOnly: true,
-                  controller: TextEditingController(
-                    text: _date == null ? '' : _format.format(_date!),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final screenWidth = constraints.maxWidth;
+        final screenHeight = constraints.maxHeight;
+
+        return Scaffold(
+          backgroundColor: Colors.white,
+          body: SafeArea(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.symmetric(
+                horizontal: screenWidth * 0.06,
+                vertical: screenHeight * 0.03,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(height: screenHeight * 0.04),
+                  Text(
+                    'When is your birthday?',
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.07,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                  style: const TextStyle(
-                    fontSize: 28,
-                    letterSpacing: 2.0,
-                    height: 1,
+                  SizedBox(height: screenHeight * 0.03),
+                  GestureDetector(
+                    onTap: _pick,
+                    child: AbsorbPointer(
+                      child: TextField(
+                        readOnly: true,
+                        controller: TextEditingController(
+                          text: _date == null ? '' : _format.format(_date!),
+                        ),
+                        style: const TextStyle(
+                          fontSize: 28,
+                          letterSpacing: 2.0,
+                          height: 1,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'MM/DD/YYYY',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: screenWidth * 0.04,
+                            vertical: screenHeight * 0.02,
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
-                  decoration: InputDecoration(
-                    hintText: '05/05/2004',
-                    border: const UnderlineInputBorder(),
+                  SizedBox(height: screenHeight * 0.04),
+                  // Show age if date is selected
+                  if (_date != null && _age != null) ...[
+                    Text(
+                      'Age: $_age years',
+                      style: TextStyle(
+                        fontSize: screenWidth * 0.05,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    // Show warning if under 18 (though date picker should prevent this)
+                    if (_age! < 18)
+                      const Text(
+                        'Must be 18 or older',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.red,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                  ],
+                  SizedBox(
+                    height: screenHeight * 0.10,
+                  ), // <-- Use this instead of Spacer
+                  SizedBox(
+                    width: double.infinity,
+                    height: screenHeight * 0.07,
+                    child: NextButton(label: 'NEXT', onPressed: _goNext),
                   ),
-                ),
+                ],
               ),
             ),
-            const SizedBox(height: 8),
-            const Text(
-              'Your profile shows your age, not your birth date',
-              style: TextStyle(fontSize: 13, color: Colors.grey),
-            ),
-            // Show age if date is selected
-            if (_date != null && _age != null) ...[
-              const SizedBox(height: 16),
-              Text(
-                'Age: $_age years',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              // Show warning if under 18 (though date picker should prevent this)
-              if (_age! < 18)
-                const Text(
-                  'Must be 18 or older',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.red,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-            ],
-            const Spacer(),
-            NextButton(label: 'NEXT', onPressed: _goNext),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

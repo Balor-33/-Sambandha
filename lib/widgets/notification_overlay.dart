@@ -47,37 +47,27 @@ class _MatchNotificationOverlayState extends State<MatchNotificationOverlay>
   }
 
   void _initializeAnimations() {
-    // Slide animation for profile pictures
     _slideController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
-
-    // Heart animation
     _heartController = AnimationController(
       duration: const Duration(milliseconds: 1200),
       vsync: this,
     );
-
-    // Text animation
     _textController = AnimationController(
       duration: const Duration(milliseconds: 600),
       vsync: this,
     );
-
-    // Particle animation
     _particleController = AnimationController(
       duration: const Duration(milliseconds: 2000),
       vsync: this,
     );
-
-    // Button animation
     _buttonController = AnimationController(
       duration: const Duration(milliseconds: 400),
       vsync: this,
     );
 
-    // Define animations
     _slideAnimation =
         Tween<Offset>(begin: const Offset(-2.0, 0.0), end: Offset.zero).animate(
           CurvedAnimation(parent: _slideController, curve: Curves.elasticOut),
@@ -120,21 +110,12 @@ class _MatchNotificationOverlayState extends State<MatchNotificationOverlay>
   }
 
   void _startAnimationSequence() async {
-    // Start slide animation immediately
     _slideController.forward();
-
-    // Start particle animation
     _particleController.forward();
-
-    // Wait a bit, then start heart animation
     await Future.delayed(const Duration(milliseconds: 400));
     _heartController.forward();
-
-    // Wait a bit more, then start text animation
     await Future.delayed(const Duration(milliseconds: 300));
     _textController.forward();
-
-    // Finally, show buttons
     await Future.delayed(const Duration(milliseconds: 400));
     _buttonController.forward();
   }
@@ -149,40 +130,44 @@ class _MatchNotificationOverlayState extends State<MatchNotificationOverlay>
     super.dispose();
   }
 
-  Widget _buildProfileImage(String? base64Image, {bool isLeft = false}) {
+  Widget _buildProfileImage(String? base64Image, double size) {
     if (base64Image == null || base64Image.isEmpty) {
       return Container(
-        width: 100,
-        height: 100,
+        width: size,
+        height: size,
         decoration: BoxDecoration(
           color: const Color(0xFFE8E8E8),
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.white, width: 4),
+          border: Border.all(color: Colors.white, width: size * 0.04),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.15),
-              blurRadius: 15,
-              offset: const Offset(0, 8),
+              blurRadius: size * 0.15,
+              offset: Offset(0, size * 0.08),
             ),
           ],
         ),
-        child: const Icon(Icons.person, size: 50, color: Color(0xFFBDBDBD)),
+        child: Icon(
+          Icons.person,
+          size: size * 0.5,
+          color: const Color(0xFFBDBDBD),
+        ),
       );
     }
 
     try {
       final Uint8List imageBytes = base64Decode(base64Image);
       return Container(
-        width: 100,
-        height: 100,
+        width: size,
+        height: size,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.white, width: 4),
+          border: Border.all(color: Colors.white, width: size * 0.04),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.15),
-              blurRadius: 15,
-              offset: const Offset(0, 8),
+              blurRadius: size * 0.15,
+              offset: Offset(0, size * 0.08),
             ),
           ],
           image: DecorationImage(
@@ -193,26 +178,31 @@ class _MatchNotificationOverlayState extends State<MatchNotificationOverlay>
       );
     } catch (e) {
       return Container(
-        width: 100,
-        height: 100,
+        width: size,
+        height: size,
         decoration: BoxDecoration(
           color: const Color(0xFFE8E8E8),
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.white, width: 4),
+          border: Border.all(color: Colors.white, width: size * 0.04),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.15),
-              blurRadius: 15,
-              offset: const Offset(0, 8),
+              blurRadius: size * 0.15,
+              offset: Offset(0, size * 0.08),
             ),
           ],
         ),
-        child: const Icon(Icons.error, size: 50, color: Colors.red),
+        child: Icon(Icons.error, size: size * 0.5, color: Colors.red),
       );
     }
   }
 
-  Widget _buildFloatingHeart(double size, Offset position, double delay) {
+  Widget _buildFloatingHeart(
+    double size,
+    Offset position,
+    double delay,
+    double screenHeight,
+  ) {
     return AnimatedBuilder(
       animation: _particleController,
       builder: (context, child) {
@@ -221,7 +211,7 @@ class _MatchNotificationOverlayState extends State<MatchNotificationOverlay>
 
         return Positioned(
           left: position.dx,
-          top: position.dy - (progress * 100),
+          top: position.dy - (progress * screenHeight * 0.13),
           child: Opacity(
             opacity: opacity.clamp(0.0, 1.0),
             child: Transform.rotate(
@@ -240,33 +230,67 @@ class _MatchNotificationOverlayState extends State<MatchNotificationOverlay>
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final profilePicSize = screenWidth * 0.22;
+
     return Material(
       color: Colors.black54,
       child: Stack(
         children: [
-          // Floating hearts background
+          // Floating hearts background (responsive)
           ...[
-            _buildFloatingHeart(20, const Offset(50, 400), 0.0),
-            _buildFloatingHeart(15, const Offset(320, 450), 0.1),
-            _buildFloatingHeart(25, const Offset(150, 420), 0.2),
-            _buildFloatingHeart(18, const Offset(280, 380), 0.3),
-            _buildFloatingHeart(22, const Offset(80, 350), 0.4),
-            _buildFloatingHeart(16, const Offset(250, 500), 0.5),
+            _buildFloatingHeart(
+              screenWidth * 0.055,
+              Offset(screenWidth * 0.13, screenHeight * 0.55),
+              0.0,
+              screenHeight,
+            ),
+            _buildFloatingHeart(
+              screenWidth * 0.04,
+              Offset(screenWidth * 0.8, screenHeight * 0.62),
+              0.1,
+              screenHeight,
+            ),
+            _buildFloatingHeart(
+              screenWidth * 0.07,
+              Offset(screenWidth * 0.35, screenHeight * 0.58),
+              0.2,
+              screenHeight,
+            ),
+            _buildFloatingHeart(
+              screenWidth * 0.05,
+              Offset(screenWidth * 0.7, screenHeight * 0.49),
+              0.3,
+              screenHeight,
+            ),
+            _buildFloatingHeart(
+              screenWidth * 0.06,
+              Offset(screenWidth * 0.2, screenHeight * 0.45),
+              0.4,
+              screenHeight,
+            ),
+            _buildFloatingHeart(
+              screenWidth * 0.042,
+              Offset(screenWidth * 0.6, screenHeight * 0.68),
+              0.5,
+              screenHeight,
+            ),
           ],
 
           // Main content
           Center(
             child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 32),
-              padding: const EdgeInsets.all(40),
+              margin: EdgeInsets.symmetric(horizontal: screenWidth * 0.08),
+              padding: EdgeInsets.all(screenWidth * 0.1),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(32),
+                borderRadius: BorderRadius.circular(screenWidth * 0.08),
                 boxShadow: [
                   BoxShadow(
                     color: const Color(0xFFFF4458).withOpacity(0.3),
-                    blurRadius: 40,
-                    spreadRadius: 10,
+                    blurRadius: screenWidth * 0.12,
+                    spreadRadius: screenWidth * 0.03,
                   ),
                 ],
               ),
@@ -282,12 +306,10 @@ class _MatchNotificationOverlayState extends State<MatchNotificationOverlay>
                         position: _slideAnimation,
                         child: _buildProfileImage(
                           widget.currentUserProfilePicture,
-                          isLeft: true,
+                          profilePicSize,
                         ),
                       ),
-
-                      const SizedBox(width: 20),
-
+                      SizedBox(width: screenWidth * 0.05),
                       // Heart in the middle with scale and rotation animation
                       AnimatedBuilder(
                         animation: _heartController,
@@ -297,7 +319,7 @@ class _MatchNotificationOverlayState extends State<MatchNotificationOverlay>
                             child: Transform.rotate(
                               angle: _heartRotationAnimation.value,
                               child: Container(
-                                padding: const EdgeInsets.all(12),
+                                padding: EdgeInsets.all(screenWidth * 0.03),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFFF4458),
                                   shape: BoxShape.circle,
@@ -306,24 +328,22 @@ class _MatchNotificationOverlayState extends State<MatchNotificationOverlay>
                                       color: const Color(
                                         0xFFFF4458,
                                       ).withOpacity(0.4),
-                                      blurRadius: 20,
-                                      spreadRadius: 2,
+                                      blurRadius: screenWidth * 0.06,
+                                      spreadRadius: screenWidth * 0.006,
                                     ),
                                   ],
                                 ),
-                                child: const Icon(
+                                child: Icon(
                                   Icons.favorite,
                                   color: Colors.white,
-                                  size: 32,
+                                  size: screenWidth * 0.08,
                                 ),
                               ),
                             ),
                           );
                         },
                       ),
-
-                      const SizedBox(width: 20),
-
+                      SizedBox(width: screenWidth * 0.05),
                       // Right profile (matched user) with opposite slide
                       SlideTransition(
                         position:
@@ -338,12 +358,13 @@ class _MatchNotificationOverlayState extends State<MatchNotificationOverlay>
                             ),
                         child: _buildProfileImage(
                           widget.matchedUserProfilePicture,
+                          profilePicSize,
                         ),
                       ),
                     ],
                   ),
 
-                  const SizedBox(height: 32),
+                  SizedBox(height: screenHeight * 0.04),
 
                   // "It's a Match!" text with animation
                   AnimatedBuilder(
@@ -356,28 +377,27 @@ class _MatchNotificationOverlayState extends State<MatchNotificationOverlay>
                           child: Column(
                             children: [
                               ShaderMask(
-                                shaderCallback: (bounds) =>
-                                    const LinearGradient(
-                                      colors: [
-                                        Color(0xFFFF4458),
-                                        Color(0xFFFF6B9D),
-                                      ],
-                                    ).createShader(bounds),
-                                child: const Text(
+                                shaderCallback: (bounds) => LinearGradient(
+                                  colors: [
+                                    const Color(0xFFFF4458),
+                                    const Color(0xFFFF6B9D),
+                                  ],
+                                ).createShader(bounds),
+                                child: Text(
                                   "It's a Match!",
                                   style: TextStyle(
-                                    fontSize: 36,
+                                    fontSize: screenWidth * 0.09,
                                     fontWeight: FontWeight.bold,
                                     color: Colors.white,
                                   ),
                                 ),
                               ),
-                              const SizedBox(height: 12),
+                              SizedBox(height: screenHeight * 0.015),
                               Text(
                                 'You and ${widget.matchedUserName} liked each other.',
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  color: Color(0xFF2C2C2C),
+                                style: TextStyle(
+                                  fontSize: screenWidth * 0.045,
+                                  color: const Color(0xFF2C2C2C),
                                   fontWeight: FontWeight.w500,
                                 ),
                                 textAlign: TextAlign.center,
@@ -389,7 +409,7 @@ class _MatchNotificationOverlayState extends State<MatchNotificationOverlay>
                     },
                   ),
 
-                  const SizedBox(height: 40),
+                  SizedBox(height: screenHeight * 0.05),
 
                   // Buttons with scale animation
                   ScaleTransition(
@@ -401,14 +421,14 @@ class _MatchNotificationOverlayState extends State<MatchNotificationOverlay>
                           width: double.infinity,
                           child: ElevatedButton.icon(
                             onPressed: widget.onChat,
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.chat_bubble_rounded,
-                              size: 20,
+                              size: screenWidth * 0.055,
                             ),
-                            label: const Text(
+                            label: Text(
                               'Start Chatting',
                               style: TextStyle(
-                                fontSize: 18,
+                                fontSize: screenWidth * 0.05,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -416,11 +436,13 @@ class _MatchNotificationOverlayState extends State<MatchNotificationOverlay>
                               backgroundColor: const Color(0xFFFF4458),
                               foregroundColor: Colors.white,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30),
+                                borderRadius: BorderRadius.circular(
+                                  screenWidth * 0.08,
+                                ),
                               ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 32,
-                                vertical: 16,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: screenWidth * 0.08,
+                                vertical: screenHeight * 0.022,
                               ),
                               elevation: 8,
                               shadowColor: const Color(
@@ -430,7 +452,7 @@ class _MatchNotificationOverlayState extends State<MatchNotificationOverlay>
                           ),
                         ),
 
-                        const SizedBox(height: 16),
+                        SizedBox(height: screenHeight * 0.02),
 
                         // Continue Browsing button
                         SizedBox(
@@ -443,18 +465,20 @@ class _MatchNotificationOverlayState extends State<MatchNotificationOverlay>
                                 width: 2,
                               ),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30),
+                                borderRadius: BorderRadius.circular(
+                                  screenWidth * 0.08,
+                                ),
                               ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 32,
-                                vertical: 16,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: screenWidth * 0.08,
+                                vertical: screenHeight * 0.022,
                               ),
                             ),
-                            child: const Text(
+                            child: Text(
                               'Continue Browsing',
                               style: TextStyle(
-                                color: Color(0xFFFF4458),
-                                fontSize: 16,
+                                color: const Color(0xFFFF4458),
+                                fontSize: screenWidth * 0.045,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),

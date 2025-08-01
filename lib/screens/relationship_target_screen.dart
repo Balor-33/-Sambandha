@@ -40,19 +40,7 @@ class _RelationshipTargetScreenState extends State<RelationshipTargetScreen> {
     setState(() => _isSaving = true);
 
     try {
-      // Prepare location data
       GeoPoint? locationGeoPoint = widget.data.currentLocation;
-
-      // Debug logging to verify the data
-      print('RelationshipTargetScreen - Final save data:');
-      print('Name: ${widget.data.firstName}');
-      print('About Me: "${widget.data.aboutMe}"'); // Use quotes to see empty strings
-      print('Gender: ${widget.data.gender}');
-      print('Birth Date: ${widget.data.birthDate}');
-      print('Interest: ${widget.data.interest}');
-      print('Hobbies: ${widget.data.hobbies}');
-      print('Target Relation: $_selectedTarget');
-      print('Distance Preference: ${widget.data.distancePreference}');
 
       await _firebaseService.saveUserInterests(
         name: widget.data.firstName ?? 'Unknown',
@@ -63,10 +51,8 @@ class _RelationshipTargetScreenState extends State<RelationshipTargetScreen> {
         targetRelation: _selectedTarget!,
         location: locationGeoPoint,
         distancePreference: widget.data.distancePreference,
-        aboutMe: widget.data.aboutMe, // ADD THIS LINE - This was missing!
+        aboutMe: widget.data.aboutMe,
       );
-
-      print('Profile saved successfully to database!');
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -104,7 +90,12 @@ class _RelationshipTargetScreenState extends State<RelationshipTargetScreen> {
     setState(() => _selectedTarget = target);
   }
 
-  Widget _buildTargetOption(String label, String emoji) {
+  Widget _buildTargetOption(
+    String label,
+    String emoji,
+    double screenWidth,
+    double screenHeight,
+  ) {
     final isSelected = _selectedTarget == label;
     final isDisabled = _isSaving;
 
@@ -114,10 +105,13 @@ class _RelationshipTargetScreenState extends State<RelationshipTargetScreen> {
         opacity: isDisabled ? 0.6 : 1.0,
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          margin: const EdgeInsets.only(bottom: 12),
+          padding: EdgeInsets.symmetric(
+            horizontal: screenWidth * 0.05,
+            vertical: screenHeight * 0.022,
+          ),
+          margin: EdgeInsets.only(bottom: screenHeight * 0.018),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(screenHeight * 0.025),
             color: isSelected ? Colors.black : Colors.white,
             border: Border.all(
               color: isSelected ? Colors.black : Colors.grey.shade300,
@@ -126,19 +120,25 @@ class _RelationshipTargetScreenState extends State<RelationshipTargetScreen> {
           ),
           child: Row(
             children: [
-              Text(emoji, style: const TextStyle(fontSize: 24)),
-              const SizedBox(width: 16),
+              Text(emoji, style: TextStyle(fontSize: screenWidth * 0.07)),
+              SizedBox(width: screenWidth * 0.04),
               Expanded(
                 child: Text(
                   label,
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: screenWidth * 0.045,
                     fontWeight: FontWeight.w500,
                     color: isSelected ? Colors.white : Colors.black,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ),
-              if (isSelected) const Icon(Icons.check, color: Colors.white),
+              if (isSelected)
+                Icon(
+                  Icons.check,
+                  color: Colors.white,
+                  size: screenWidth * 0.06,
+                ),
             ],
           ),
         ),
@@ -148,75 +148,81 @@ class _RelationshipTargetScreenState extends State<RelationshipTargetScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              IconButton(
-                onPressed: _isSaving ? null : () => Navigator.pop(context),
-                icon: const Icon(
-                  Icons.arrow_back_ios,
-                  size: 24,
-                  color: Colors.black,
-                ),
-                padding: EdgeInsets.zero,
-                alignment: Alignment.centerLeft,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final screenWidth = constraints.maxWidth;
+        final screenHeight = constraints.maxHeight;
+
+        return Scaffold(
+          backgroundColor: Colors.white,
+          body: SafeArea(
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: screenWidth * 0.06,
+                vertical: screenHeight * 0.03,
               ),
-
-              const SizedBox(height: 32),
-
-              const Text(
-                "What are you\nlooking for?",
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                  height: 1.2,
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              Text(
-                'Select what type of relationship you\'re seeking',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey.shade600,
-                  height: 1.4,
-                ),
-              ),
-
-              const SizedBox(height: 40),
-
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: _relationshipTargets
-                        .map(
-                          (target) => _buildTargetOption(
-                            target['label']!,
-                            target['emoji']!,
-                          ),
-                        )
-                        .toList(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  IconButton(
+                    onPressed: _isSaving ? null : () => Navigator.pop(context),
+                    icon: Icon(
+                      Icons.arrow_back_ios,
+                      size: screenWidth * 0.06,
+                      color: Colors.black,
+                    ),
+                    padding: EdgeInsets.zero,
+                    alignment: Alignment.centerLeft,
                   ),
-                ),
+                  SizedBox(height: screenHeight * 0.04),
+                  Text(
+                    "What are you\nlooking for?",
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.08,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                      height: 1.2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  SizedBox(height: screenHeight * 0.01),
+                  Text(
+                    'Select what type of relationship you\'re seeking',
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.045,
+                      color: Colors.grey.shade600,
+                      height: 1.4,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  SizedBox(height: screenHeight * 0.03),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: _relationshipTargets
+                            .map(
+                              (target) => _buildTargetOption(
+                                target['label']!,
+                                target['emoji']!,
+                                screenWidth,
+                                screenHeight,
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: screenHeight * 0.03),
+                  NextButton(
+                    label: _isSaving ? 'SAVING...' : 'COMPLETE',
+                    onPressed: _isSaving ? () {} : () => _continueToNext(),
+                  ),
+                ],
               ),
-
-              const SizedBox(height: 24),
-
-              NextButton(
-                label: _isSaving ? 'SAVING...' : 'COMPLETE',
-                onPressed: _isSaving ? () {} : () => _continueToNext(),
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
