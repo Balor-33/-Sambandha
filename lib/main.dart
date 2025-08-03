@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:Sambandha/screens/interest_screen.dart';
 import 'firebase_options.dart';
 import 'model/profile_setup_data.dart';
-import 'screens/login_screen.dart'; // Add this import
+import 'screens/login_screen.dart';
 import 'screens/signup_page.dart';
 import 'screens/first_name_screen.dart';
 import 'screens/gender_screen.dart';
@@ -153,7 +153,6 @@ class _MyAppState extends State<MyApp> {
 
           // Add a home route for after login/signup completion
           case '/home':
-            // Replace this with your actual home/main app screen
             return MaterialPageRoute(
               builder: (_) => const Scaffold(
                 body: Center(child: Text('Welcome to SAMBANDHA!')),

@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'notification_service.dart';
-import 'user_data_service.dart';
+import '../widgets/encryption_helper.dart';
 
 class ChatService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -30,8 +30,7 @@ class ChatService {
         await chatRef.set({
           'participants': [currentUserId, otherUserId],
           'createdAt': FieldValue.serverTimestamp(),
-          'lastMessageAt':
-              FieldValue.serverTimestamp(), // Changed from lastMessageTime
+          'lastMessageAt': FieldValue.serverTimestamp(),
           'lastMessage': '',
           'lastMessageSenderId': '',
         });
@@ -44,7 +43,7 @@ class ChatService {
     }
   }
 
-  // Get user data from user_interests collection (matching your existing structure)
+  // Get user data from user_interests collection
   Future<Map<String, dynamic>?> getUserData(String userId) async {
     try {
       final userDoc = await _firestore
@@ -81,15 +80,18 @@ class ChatService {
     try {
       final batch = _firestore.batch();
 
+      // Encrypt the message before saving
+      final encryptedMessage = EncryptionHelper.encryptText(message.trim());
+
       // Add message to subcollection
       final messageRef = _firestore
           .collection('chats')
           .doc(chatId)
           .collection('messages')
-          .doc(); // Auto-generate message ID
+          .doc();
 
       batch.set(messageRef, {
-        'text': message.trim(),
+        'text': encryptedMessage,
         'senderId': currentUser.uid,
         'timestamp': FieldValue.serverTimestamp(),
         'type': 'text',
@@ -98,15 +100,14 @@ class ChatService {
       // Update chat document
       final chatRef = _firestore.collection('chats').doc(chatId);
       batch.update(chatRef, {
-        'lastMessage': message.trim(),
-        'lastMessageAt':
-            FieldValue.serverTimestamp(), // Consistent with creation
+        'lastMessage': encryptedMessage,
+        'lastMessageAt': FieldValue.serverTimestamp(),
         'lastMessageSenderId': currentUser.uid,
       });
 
       await batch.commit();
 
-      // Send notification to the other user
+      // Send notification to the other user (optional: send plain or encrypted)
       await _sendMessageNotification(chatId, message.trim(), currentUser.uid);
     } catch (e) {
       print('Error sending message: $e');
@@ -143,7 +144,6 @@ class ChatService {
       );
     } catch (e) {
       print('Error sending message notification: $e');
-      // Don't rethrow - notification failure shouldn't block message sending
     }
   }
 
@@ -164,8 +164,7 @@ class ChatService {
 
     try {
       // Count messages from other users
-      // Note: This is a simplified version. For production, you'd want to track
-      // read timestamps per user to get accurate unread counts
+
       final messagesSnapshot = await _firestore
           .collection('chats')
           .doc(chatId)
@@ -215,10 +214,7 @@ class ChatService {
     return _firestore
         .collection('chats')
         .where('participants', arrayContains: currentUserId)
-        .orderBy(
-          'lastMessageAt',
-          descending: true,
-        ) // Changed from lastMessageTime
+        .orderBy('lastMessageAt', descending: true)
         .snapshots()
         .map(
           (snapshot) => snapshot.docs

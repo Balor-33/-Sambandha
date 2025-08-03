@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:convert';
+import '../widgets/encryption_helper.dart';
 
 class ChatScreen extends StatefulWidget {
   final String chatId;
@@ -287,8 +288,18 @@ class _ChatScreenState extends State<ChatScreen> {
                     final message = messageDoc.data() as Map<String, dynamic>;
                     final isMe = message['senderId'] == _auth.currentUser?.uid;
 
+                    // Decrypt the message text
+                    String decryptedText = '';
+                    try {
+                      decryptedText = EncryptionHelper.decryptText(
+                        message['text'] ?? '',
+                      );
+                    } catch (e) {
+                      decryptedText = '[Unable to decrypt]';
+                    }
+
                     return _buildMessageBubble(
-                      message['text'] ?? '',
+                      decryptedText,
                       isMe,
                       message['timestamp'] as Timestamp?,
                       screenWidth,
