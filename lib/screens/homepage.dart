@@ -1843,7 +1843,7 @@ class _DetailedProfilePageState extends State<DetailedProfilePage>
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  '${widget.user.matchScore}% Match',
+                                  '${widget.user.matchScore} Match',
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 16,

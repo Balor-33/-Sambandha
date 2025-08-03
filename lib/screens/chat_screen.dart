@@ -81,6 +81,9 @@ class _ChatScreenState extends State<ChatScreen> {
     try {
       final batch = _firestore.batch();
 
+      // ENCRYPT the message before saving to Firestore
+      final encryptedMessage = EncryptionHelper.encryptText(message);
+
       final messageRef = _firestore
           .collection('chats')
           .doc(widget.chatId)
@@ -88,7 +91,7 @@ class _ChatScreenState extends State<ChatScreen> {
           .doc();
 
       batch.set(messageRef, {
-        'text': message,
+        'text': encryptedMessage, // Save encrypted text
         'senderId': currentUser.uid,
         'timestamp': FieldValue.serverTimestamp(),
         'type': 'text',
@@ -96,25 +99,28 @@ class _ChatScreenState extends State<ChatScreen> {
 
       final chatRef = _firestore.collection('chats').doc(widget.chatId);
       batch.update(chatRef, {
-        'lastMessage': message,
+        'lastMessage': encryptedMessage, // Save encrypted last message
         'lastMessageAt': FieldValue.serverTimestamp(),
         'lastMessageSenderId': currentUser.uid,
       });
 
       await batch.commit();
 
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
+      // Auto-scroll to bottom after sending
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      });
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Failed to send message')));
+        ).showSnackBar(SnackBar(content: Text('Failed to send message: $e')));
       }
     }
   }
@@ -288,14 +294,15 @@ class _ChatScreenState extends State<ChatScreen> {
                     final message = messageDoc.data() as Map<String, dynamic>;
                     final isMe = message['senderId'] == _auth.currentUser?.uid;
 
-                    // Decrypt the message text
+                    // DECRYPT the message text for display
                     String decryptedText = '';
                     try {
                       decryptedText = EncryptionHelper.decryptText(
                         message['text'] ?? '',
                       );
                     } catch (e) {
-                      decryptedText = '[Unable to decrypt]';
+                      print('Error decrypting message: $e');
+                      decryptedText = '[Unable to decrypt message]';
                     }
 
                     return _buildMessageBubble(
@@ -362,7 +369,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
               ),
               child: Text(
-                message,
+                message, // This is now the decrypted message
                 style: TextStyle(
                   color: isMe ? Colors.white : Colors.black,
                   fontSize: screenWidth * 0.042,
@@ -426,6 +433,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       horizontal: screenWidth * 0.04,
                       vertical: screenHeight * 0.016,
                     ),
+                    counterText: '', // Hide character counter
                   ),
                   textInputAction: TextInputAction.send,
                   onSubmitted: (_) => _sendMessage(),
