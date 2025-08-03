@@ -12,19 +12,60 @@ import 'screens/birthday_screen.dart';
 import 'screens/hobbies_screen.dart';
 import 'screens/distance_preference_screen.dart';
 import 'screens/relationship_target_screen.dart';
+import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Initialize notification service
+  await NotificationService.initialize();
+
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+  @override
+  void initState() {
+    super.initState();
+    // Set up notification navigation callback
+    NotificationService.setNavigationCallback(_handleNotificationTap);
+  }
+
+  void _handleNotificationTap(String route, Map<String, dynamic>? arguments) {
+    // Handle notification tap navigation
+    print('Navigating to: $route with arguments: $arguments');
+
+    if (navigatorKey.currentState != null) {
+      switch (route) {
+        case '/matches':
+          navigatorKey.currentState!.pushNamed(
+            '/matches',
+            arguments: arguments,
+          );
+          break;
+        case '/chat':
+          navigatorKey.currentState!.pushNamed('/chat', arguments: arguments);
+          break;
+        default:
+          print('Unknown notification route: $route');
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'SAMBANDHA',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
@@ -90,6 +131,23 @@ class MyApp extends StatelessWidget {
             return MaterialPageRoute(
               builder: (_) => RelationshipTargetScreen(
                 data: settings.arguments as ProfileSetupData,
+              ),
+            );
+
+          case '/matches':
+            return MaterialPageRoute(
+              builder: (_) =>
+                  const Scaffold(body: Center(child: Text('Matches Screen'))),
+            );
+
+          case '/chat':
+            final args = settings.arguments as Map<String, dynamic>?;
+            return MaterialPageRoute(
+              builder: (_) => Scaffold(
+                appBar: AppBar(title: Text('Chat')),
+                body: Center(
+                  child: Text('Chat screen - chatId: ${args?['chatId']}'),
+                ),
               ),
             );
 

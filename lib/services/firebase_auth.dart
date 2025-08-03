@@ -1,5 +1,6 @@
-// lib/services/firebase_auth_service.dart
 import 'package:firebase_auth/firebase_auth.dart';
+import 'notification_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class FirebaseAuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -14,10 +15,17 @@ class FirebaseAuthService {
     required String email,
     required String password,
   }) async {
-    return await _auth.createUserWithEmailAndPassword(
+    final userCredential = await _auth.createUserWithEmailAndPassword(
       email: email,
       password: password,
     );
+
+    // Store FCM token after successful user creation
+    if (userCredential.user != null) {
+      await _storeFCMToken(userCredential.user!.uid);
+    }
+
+    return userCredential;
   }
 
   // Sign in with email and password
@@ -25,10 +33,51 @@ class FirebaseAuthService {
     required String email,
     required String password,
   }) async {
-    return await _auth.signInWithEmailAndPassword(
+    final userCredential = await _auth.signInWithEmailAndPassword(
       email: email,
       password: password,
     );
+
+    // Store FCM token after successful sign-in
+    if (userCredential.user != null) {
+      await _storeFCMToken(userCredential.user!.uid);
+    }
+
+    return userCredential;
+  }
+
+  // Store FCM token for the user
+  Future<void> _storeFCMToken(String userId) async {
+    try {
+      final fcmToken = await NotificationService.getCurrentFCMToken();
+      if (fcmToken != null) {
+        await FirebaseFirestore.instance
+            .collection('user_interests')
+            .doc(userId)
+            .update({
+              'fcmToken': fcmToken,
+              'lastTokenUpdate': FieldValue.serverTimestamp(),
+            });
+        print('FCM token stored for user: $userId');
+      }
+    } catch (e) {
+      // Create document if it doesn't exist
+      try {
+        final fcmToken = await NotificationService.getCurrentFCMToken();
+        if (fcmToken != null) {
+          await FirebaseFirestore.instance
+              .collection('user_interests')
+              .doc(userId)
+              .set({
+                'fcmToken': fcmToken,
+                'lastTokenUpdate': FieldValue.serverTimestamp(),
+              }, SetOptions(merge: true));
+          print('FCM token created for user: $userId');
+        }
+      } catch (e2) {
+        print('Error storing FCM token: $e2');
+      }
+    }
   }
 
   // Send email verification

@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:math' as math;
 import '../model/user_action_model.dart';
 import '../model/match_model.dart';
+import 'notification_service.dart';
 
 class FirebaseUserService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -633,9 +634,36 @@ class FirebaseUserService {
     }
   }
 
-  /// Placeholder for triggering a match notification
-  void _triggerMatchNotification(String userA, String userB) {
+  /// Trigger match notification for both users
+  void _triggerMatchNotification(String userA, String userB) async {
     print('Match notification: $userA and $userB matched!');
+
+    try {
+      // Get user data for both users
+      final userAData = await getUserInterests(userA);
+      final userBData = await getUserInterests(userB);
+
+      if (userAData != null && userBData != null) {
+        // Send notification to userA about userB
+        await NotificationService.sendMatchNotification(
+          targetUserId: userA,
+          matchedUserName: userBData['name'] ?? 'Someone',
+          matchedUserId: userB,
+          matchedUserProfilePic: userBData['profilePicture'],
+        );
+
+        // Send notification to userB about userA
+        await NotificationService.sendMatchNotification(
+          targetUserId: userB,
+          matchedUserName: userAData['name'] ?? 'Someone',
+          matchedUserId: userA,
+          matchedUserProfilePic: userAData['profilePicture'],
+        );
+      }
+    } catch (e) {
+      print('Error sending match notifications: $e');
+      // Don't rethrow - notification failure shouldn't block the match
+    }
   }
 
   /// Get all actions performed by the current user
@@ -782,6 +810,9 @@ class FirebaseUserService {
       'timestamp': FieldValue.serverTimestamp(),
       'isActive': true,
     });
+
+    // Trigger match notifications for both users
+    _triggerMatchNotification(userA, userB);
   }
 }
 

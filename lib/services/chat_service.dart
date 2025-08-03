@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'notification_service.dart';
+import 'user_data_service.dart';
 
 class ChatService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -103,9 +105,45 @@ class ChatService {
       });
 
       await batch.commit();
+
+      // Send notification to the other user
+      await _sendMessageNotification(chatId, message.trim(), currentUser.uid);
     } catch (e) {
       print('Error sending message: $e');
       rethrow;
+    }
+  }
+
+  // Helper method to send message notifications
+  Future<void> _sendMessageNotification(
+    String chatId,
+    String message,
+    String senderId,
+  ) async {
+    try {
+      // Get other user ID from chat ID
+      final chatParts = chatId.split('_');
+      if (chatParts.length != 2) return;
+
+      final otherUserId = chatParts[0] == senderId
+          ? chatParts[1]
+          : chatParts[0];
+
+      // Get sender's name
+      final senderData = await getUserData(senderId);
+      final senderName = senderData?['name'] ?? 'Someone';
+
+      // Send notification
+      await NotificationService.sendMessageNotification(
+        targetUserId: otherUserId,
+        senderName: senderName,
+        message: message,
+        chatId: chatId,
+        senderId: senderId,
+      );
+    } catch (e) {
+      print('Error sending message notification: $e');
+      // Don't rethrow - notification failure shouldn't block message sending
     }
   }
 
