@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:sambandha/screens/interest_screen.dart';
+import 'package:Sambandha/screens/interest_screen.dart';
 import 'firebase_options.dart';
 import 'model/profile_setup_data.dart';
 import 'screens/login_screen.dart'; // Add this import

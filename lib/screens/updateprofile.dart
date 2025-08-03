@@ -1,11 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:sambandha/services/firebase_user_service.dart';
+import 'package:Sambandha/services/firebase_user_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class UpdateProfilePage extends StatefulWidget {

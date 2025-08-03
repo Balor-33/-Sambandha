@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:sambandha/services/chat_service.dart';
+import 'package:Sambandha/services/chat_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/firebase_user_service.dart';
 import '../services/user_data_service.dart';

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:sambandha/screens/profilepage.dart';
+import 'package:Sambandha/screens/profilepage.dart';
 import '../services/firebase_user_service.dart';
 import '../model/profile_setup_data.dart';
 import '../widgets/next_button.dart';
