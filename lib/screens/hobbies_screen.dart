@@ -5,7 +5,6 @@ import 'distance_preference_screen.dart';
 
 class HobbiesScreen extends StatefulWidget {
   const HobbiesScreen({super.key, required this.data});
-
   final ProfileSetupData data;
 
   @override
@@ -16,7 +15,6 @@ class _HobbiesScreenState extends State<HobbiesScreen> {
   final Set<String> _selectedHobbies = {};
   final int _minRequiredHobbies = 5;
 
-  // List of available hobbies with their emojis
   final List<Map<String, String>> _hobbies = [
     {'label': 'cooking', 'emoji': '🍳'},
     {'label': 'travelling', 'emoji': '🌍'},
@@ -44,10 +42,7 @@ class _HobbiesScreenState extends State<HobbiesScreen> {
       return;
     }
 
-    // Save hobbies to profile data
     widget.data.hobbies = _selectedHobbies.toList();
-
-    // Navigate to the next screen or complete setup
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -83,7 +78,6 @@ class _HobbiesScreenState extends State<HobbiesScreen> {
     double screenHeight,
   ) {
     final isSelected = _selectedHobbies.contains(label);
-
     return GestureDetector(
       onTap: () => _toggleHobby(label),
       child: Container(
@@ -136,7 +130,6 @@ class _HobbiesScreenState extends State<HobbiesScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Back button
                   IconButton(
                     onPressed: () => Navigator.pop(context),
                     icon: Icon(
@@ -147,10 +140,7 @@ class _HobbiesScreenState extends State<HobbiesScreen> {
                     padding: EdgeInsets.zero,
                     alignment: Alignment.centerLeft,
                   ),
-
                   SizedBox(height: screenHeight * 0.04),
-
-                  // Main title
                   Text(
                     "Let's explore your\ninterests !",
                     style: TextStyle(
@@ -161,10 +151,7 @@ class _HobbiesScreenState extends State<HobbiesScreen> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-
                   SizedBox(height: screenHeight * 0.01),
-
-                  // Subtitle section
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -187,10 +174,7 @@ class _HobbiesScreenState extends State<HobbiesScreen> {
                       ),
                     ],
                   ),
-
                   SizedBox(height: screenHeight * 0.03),
-
-                  // Hobbies selection area
                   Expanded(
                     child: SingleChildScrollView(
                       child: Wrap(
@@ -207,10 +191,7 @@ class _HobbiesScreenState extends State<HobbiesScreen> {
                       ),
                     ),
                   ),
-
                   SizedBox(height: screenHeight * 0.03),
-
-                  // Next button
                   SizedBox(
                     width: double.infinity,
                     height: screenHeight * 0.07,

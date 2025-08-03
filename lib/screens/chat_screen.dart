@@ -40,7 +40,6 @@ class _ChatScreenState extends State<ChatScreen> {
     super.dispose();
   }
 
-  // Ensure chat document exists before loading messages
   Future<void> _ensureChatExists() async {
     try {
       final currentUser = _auth.currentUser;
@@ -52,7 +51,6 @@ class _ChatScreenState extends State<ChatScreen> {
           .get();
 
       if (!chatDoc.exists) {
-        // Create chat if it doesn't exist
         await _firestore.collection('chats').doc(widget.chatId).set({
           'participants': [currentUser.uid, widget.otherUserId],
           'createdAt': FieldValue.serverTimestamp(),
@@ -62,7 +60,11 @@ class _ChatScreenState extends State<ChatScreen> {
         });
       }
     } catch (e) {
-      print('Error ensuring chat exists: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error ensuring chat exists')));
+      }
     }
   }
 
@@ -76,15 +78,13 @@ class _ChatScreenState extends State<ChatScreen> {
     if (currentUser == null) return;
 
     try {
-      // Use batch write for atomicity
       final batch = _firestore.batch();
 
-      // Add message to subcollection
       final messageRef = _firestore
           .collection('chats')
           .doc(widget.chatId)
           .collection('messages')
-          .doc(); // Auto-generate ID
+          .doc();
 
       batch.set(messageRef, {
         'text': message,
@@ -93,7 +93,6 @@ class _ChatScreenState extends State<ChatScreen> {
         'type': 'text',
       });
 
-      // Update chat's last message
       final chatRef = _firestore.collection('chats').doc(widget.chatId);
       batch.update(chatRef, {
         'lastMessage': message,
@@ -103,27 +102,31 @@ class _ChatScreenState extends State<ChatScreen> {
 
       await batch.commit();
 
-      // Auto scroll to bottom
-      Future.delayed(const Duration(milliseconds: 100), () {
-        if (_scrollController.hasClients) {
-          _scrollController.animateTo(
-            _scrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOut,
-          );
-        }
-      });
-    } catch (e) {
-      print('Error sending message: $e');
-      // Show error to user
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to send message: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
         );
       }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to send message')));
+      }
+    }
+  }
+
+  ImageProvider? _getImageProvider(String imageString) {
+    if (imageString.isEmpty) return null;
+    if (imageString.startsWith('http')) {
+      return NetworkImage(imageString);
+    }
+    try {
+      return MemoryImage(const Base64Decoder().convert(imageString));
+    } catch (e) {
+      return null;
     }
   }
 
@@ -131,11 +134,9 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
-    final profilePicRadius = screenWidth * 0.055; // Responsive avatar size
 
     return Scaffold(
       backgroundColor: Colors.white,
-      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -146,14 +147,14 @@ class _ChatScreenState extends State<ChatScreen> {
         title: Row(
           children: [
             CircleAvatar(
-              radius: profilePicRadius,
+              radius: screenWidth * 0.055,
               backgroundImage: _getImageProvider(widget.otherUserImage),
               backgroundColor: Colors.grey.shade200,
               child: widget.otherUserImage.isEmpty
                   ? Icon(
                       Icons.person,
                       color: Colors.grey,
-                      size: profilePicRadius,
+                      size: screenWidth * 0.055,
                     )
                   : null,
             ),
@@ -183,28 +184,6 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ],
         ),
-        actions: [
-          IconButton(
-            icon: Icon(
-              Icons.videocam_outlined,
-              color: Colors.grey,
-              size: screenWidth * 0.06,
-            ),
-            onPressed: () {
-              // Video call functionality
-            },
-          ),
-          IconButton(
-            icon: Icon(
-              Icons.phone_outlined,
-              color: Colors.grey,
-              size: screenWidth * 0.06,
-            ),
-            onPressed: () {
-              // Voice call functionality
-            },
-          ),
-        ],
       ),
       body: Column(
         children: [
@@ -228,7 +207,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           color: Colors.red,
                         ),
                         SizedBox(height: screenHeight * 0.02),
-                        Text('Error: ${snapshot.error}'),
+                        Text('Error loading messages'),
                         SizedBox(height: screenHeight * 0.02),
                         ElevatedButton(
                           onPressed: () => setState(() {}),
@@ -286,7 +265,6 @@ class _ChatScreenState extends State<ChatScreen> {
                   );
                 }
 
-                // Auto-scroll to bottom when new messages arrive
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (_scrollController.hasClients) {
                     _scrollController.animateTo(
@@ -325,36 +303,6 @@ class _ChatScreenState extends State<ChatScreen> {
         ],
       ),
     );
-  }
-
-  // Helper method to get appropriate image provider
-  ImageProvider? _getImageProvider(String imageString) {
-    if (imageString.isEmpty) return null;
-
-    if (imageString.startsWith('data:image')) {
-      // Data URL format
-      return NetworkImage(imageString);
-    } else if (imageString.startsWith('http')) {
-      // Regular URL
-      return NetworkImage(imageString);
-    } else {
-      // Assume base64 string
-      try {
-        return MemoryImage(const Base64Decoder().convert(imageString));
-      } catch (e) {
-        print('Error decoding base64 image: $e');
-        return null;
-      }
-    }
-  }
-
-  // Helper method for current user image
-  ImageProvider? _getCurrentUserImageProvider() {
-    final photoURL = _auth.currentUser?.photoURL;
-    if (photoURL?.isNotEmpty == true) {
-      return NetworkImage(photoURL!);
-    }
-    return null;
   }
 
   Widget _buildMessageBubble(
@@ -415,7 +363,9 @@ class _ChatScreenState extends State<ChatScreen> {
             SizedBox(width: screenWidth * 0.02),
             CircleAvatar(
               radius: screenWidth * 0.045,
-              backgroundImage: _getCurrentUserImageProvider(),
+              backgroundImage: _getImageProvider(
+                _auth.currentUser?.photoURL ?? '',
+              ),
               backgroundColor: Colors.grey.shade200,
               child: _auth.currentUser?.photoURL?.isEmpty != false
                   ? Icon(
@@ -469,26 +419,6 @@ class _ChatScreenState extends State<ChatScreen> {
                   textInputAction: TextInputAction.send,
                   onSubmitted: (_) => _sendMessage(),
                   maxLength: 1000,
-                  buildCounter:
-                      (
-                        context, {
-                        required currentLength,
-                        required isFocused,
-                        maxLength,
-                      }) {
-                        if (currentLength > 900) {
-                          return Text(
-                            '$currentLength/$maxLength',
-                            style: TextStyle(
-                              color: currentLength >= maxLength!
-                                  ? Colors.red
-                                  : Colors.grey,
-                              fontSize: screenWidth * 0.03,
-                            ),
-                          );
-                        }
-                        return null;
-                      },
                 ),
               ),
             ),

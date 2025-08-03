@@ -5,7 +5,6 @@ import 'hobbies_screen.dart';
 
 class InterestScreen extends StatefulWidget {
   const InterestScreen({super.key, required this.data});
-
   final ProfileSetupData data;
 
   @override
@@ -17,25 +16,23 @@ class _InterestScreenState extends State<InterestScreen> {
 
   void _continueToHobbies() {
     if (_interest == null) {
-      _error('Pick at least one');
+      _showError('Pick at least one');
       return;
     }
 
-    // Save the interest selection
     widget.data.interest = _interest;
-
-    // Navigate to the hobbies screen
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => HobbiesScreen(data: widget.data)),
     );
   }
 
-  void _error(String m) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
+  void _showError(String message) => ScaffoldMessenger.of(
+    context,
+  ).showSnackBar(SnackBar(content: Text(message)));
 
   Widget _pill(String label, double screenWidth, double screenHeight) {
-    final sel = _interest == label;
+    final isSelected = _interest == label;
     return GestureDetector(
       onTap: () => setState(() => _interest = label),
       child: Container(
@@ -44,7 +41,7 @@ class _InterestScreenState extends State<InterestScreen> {
         margin: EdgeInsets.only(bottom: screenHeight * 0.02),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(screenHeight * 0.032),
-          color: sel ? Colors.black : Colors.white,
+          color: isSelected ? Colors.black : Colors.white,
           border: Border.all(color: Colors.black, width: 1),
         ),
         child: Text(
@@ -52,7 +49,7 @@ class _InterestScreenState extends State<InterestScreen> {
           style: TextStyle(
             fontSize: screenWidth * 0.045,
             fontWeight: FontWeight.w500,
-            color: sel ? Colors.white : Colors.black,
+            color: isSelected ? Colors.white : Colors.black,
             overflow: TextOverflow.ellipsis,
           ),
         ),

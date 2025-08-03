@@ -17,61 +17,38 @@ class UpdateProfilePage extends StatefulWidget {
 
 class _UpdateProfilePageState extends State<UpdateProfilePage>
     with TickerProviderStateMixin {
-  // Firebase Auth instance
   final FirebaseAuth _auth = FirebaseAuth.instance;
-
-  // Controllers for text fields
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _aboutMeController = TextEditingController();
-
-  // Focus nodes
   final FocusNode _nameFocus = FocusNode();
   final FocusNode _aboutMeFocus = FocusNode();
-
-  // Scroll controller for parallax effect
   final ScrollController _scrollController = ScrollController();
-
-  // Image handling
   File? _imageFile;
   String? _base64Image;
   final ImagePicker _picker = ImagePicker();
-
-  // Loading states
   bool _isLoading = false;
   bool _isSaving = false;
-
-  // User data
   Map<String, dynamic>? _userData;
   DateTime? _selectedBirthDate;
   List<String> _selectedHobbies = [];
-
-  // Firebase service
   final FirebaseUserService _userService = FirebaseUserService();
-
-  // Parallax scroll values
   double _scrollOffset = 0.0;
-  final double _headerHeight = 400.0; // Increased for better wallpaper view
-  final double _minHeaderHeight = 100.0; // Smaller when collapsed
-
-  // Animation controllers
+  final double _headerHeight = 400.0;
+  final double _minHeaderHeight = 100.0;
   late AnimationController _fadeController;
   late AnimationController _slideController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
-  // Enhanced color palette - more aesthetic
-  static const Color primaryColor = Color(0xFF6366F1); // Beautiful blue
-  static const Color secondaryColor = Color(0xFFEC4899); // Beautiful pink
-  static const Color accentColor = Color(0xFF8B5CF6); // Purple accent
-  static const Color gradientStart = Color(0xFF667eea); // Blue gradient start
-  static const Color gradientEnd = Color(0xFFf093fb); // Pink gradient end
-
-  // Keep these existing ones unchanged
+  static const Color primaryColor = Color(0xFF6366F1);
+  static const Color secondaryColor = Color(0xFFEC4899);
+  static const Color accentColor = Color(0xFF8B5CF6);
+  static const Color gradientStart = Color(0xFF667eea);
+  static const Color gradientEnd = Color(0xFFf093fb);
   static const Color textPrimary = Color(0xFF2D3748);
   static const Color textSecondary = Color(0xFF718096);
   static const Color glassColor = Color(0xFFFFFFFF);
 
-  // Hobbies list with better colors
   final List<Map<String, dynamic>> _availableHobbies = [
     {'name': 'Reading', 'icon': Icons.book, 'color': const Color(0xFF6C63FF)},
     {
@@ -148,9 +125,7 @@ class _UpdateProfilePageState extends State<UpdateProfilePage>
 
   void _setupScrollListener() {
     _scrollController.addListener(() {
-      setState(() {
-        _scrollOffset = _scrollController.offset;
-      });
+      setState(() => _scrollOffset = _scrollController.offset);
     });
   }
 
@@ -166,11 +141,9 @@ class _UpdateProfilePageState extends State<UpdateProfilePage>
     super.dispose();
   }
 
-  // Load existing user profile data
   Future<void> _loadUserProfile() async {
     try {
       setState(() => _isLoading = true);
-
       _userData = await _userService.getUserInterests();
 
       if (_userData != null) {
@@ -190,18 +163,16 @@ class _UpdateProfilePageState extends State<UpdateProfilePage>
         }
       }
 
-      // Start animations
       _fadeController.forward();
       await Future.delayed(const Duration(milliseconds: 300));
       _slideController.forward();
     } catch (e) {
-      _showErrorSnackbar('Error loading profile: $e');
+      _showErrorSnackbar('Error loading profile');
     } finally {
       setState(() => _isLoading = false);
     }
   }
 
-  // Logout function - properly placed as a separate method
   Future<void> _logout() async {
     await _auth.signOut();
     if (mounted) {
@@ -209,7 +180,6 @@ class _UpdateProfilePageState extends State<UpdateProfilePage>
     }
   }
 
-  // Enhanced image source selection dialog
   Future<void> _showImageSourceDialog() async {
     showDialog(
       context: context,
@@ -376,7 +346,6 @@ class _UpdateProfilePageState extends State<UpdateProfilePage>
     );
   }
 
-  // Pick image from camera or gallery
   Future<void> _pickImage(ImageSource source) async {
     try {
       final XFile? pickedFile = await _picker.pickImage(
@@ -395,26 +364,21 @@ class _UpdateProfilePageState extends State<UpdateProfilePage>
         _showSuccessSnackbar('Photo updated successfully!');
       }
     } catch (e) {
-      _showErrorSnackbar('Error picking image: $e');
+      _showErrorSnackbar('Error picking image');
     }
   }
 
-  // Convert image to base64
   Future<void> _convertToBase64() async {
     if (_imageFile == null) return;
 
     try {
       Uint8List imageBytes = await _imageFile!.readAsBytes();
-      String base64String = base64Encode(imageBytes);
-      setState(() {
-        _base64Image = base64String;
-      });
+      setState(() => _base64Image = base64Encode(imageBytes));
     } catch (e) {
-      _showErrorSnackbar('Error converting image: $e');
+      _showErrorSnackbar('Error converting image');
     }
   }
 
-  // Enhanced date picker
   Future<void> _selectBirthDate() async {
     HapticFeedback.selectionClick();
 
@@ -442,14 +406,11 @@ class _UpdateProfilePageState extends State<UpdateProfilePage>
     );
 
     if (picked != null && picked != _selectedBirthDate) {
-      setState(() {
-        _selectedBirthDate = picked;
-      });
+      setState(() => _selectedBirthDate = picked);
       HapticFeedback.lightImpact();
     }
   }
 
-  // Enhanced hobbies selection dialog
   Future<void> _showHobbiesDialog() async {
     HapticFeedback.selectionClick();
     List<String> tempSelectedHobbies = List.from(_selectedHobbies);
@@ -668,9 +629,9 @@ class _UpdateProfilePageState extends State<UpdateProfilePage>
                         ),
                         child: ElevatedButton(
                           onPressed: () {
-                            setState(() {
-                              _selectedHobbies = tempSelectedHobbies;
-                            });
+                            setState(
+                              () => _selectedHobbies = tempSelectedHobbies,
+                            );
                             Navigator.pop(context);
                             HapticFeedback.lightImpact();
                           },
@@ -703,7 +664,6 @@ class _UpdateProfilePageState extends State<UpdateProfilePage>
     );
   }
 
-  // Save profile updates
   Future<void> _saveProfile() async {
     if (_nameController.text.trim().isEmpty) {
       _showErrorSnackbar('Please enter your name');
@@ -714,7 +674,6 @@ class _UpdateProfilePageState extends State<UpdateProfilePage>
 
     try {
       setState(() => _isSaving = true);
-
       await _userService.updateUserInterests(
         name: _nameController.text.trim(),
         birthdate: _selectedBirthDate,
@@ -731,13 +690,12 @@ class _UpdateProfilePageState extends State<UpdateProfilePage>
       await Future.delayed(const Duration(milliseconds: 1000));
       Navigator.pop(context);
     } catch (e) {
-      _showErrorSnackbar('Error updating profile: $e');
+      _showErrorSnackbar('Error updating profile');
     } finally {
       setState(() => _isSaving = false);
     }
   }
 
-  // Get parallax profile image widget
   Widget _getParallaxImageWidget() {
     final parallaxOffset = _scrollOffset * 0.5;
 
@@ -794,7 +752,6 @@ class _UpdateProfilePageState extends State<UpdateProfilePage>
     );
   }
 
-  // Enhanced text field widget
   Widget _buildTextField({
     required TextEditingController controller,
     required FocusNode focusNode,
@@ -887,7 +844,6 @@ class _UpdateProfilePageState extends State<UpdateProfilePage>
     );
   }
 
-  // Enhanced selection field widget
   Widget _buildSelectionField({
     required String label,
     required String value,
@@ -985,7 +941,6 @@ class _UpdateProfilePageState extends State<UpdateProfilePage>
     );
   }
 
-  // Show error snackbar
   void _showErrorSnackbar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -1025,7 +980,6 @@ class _UpdateProfilePageState extends State<UpdateProfilePage>
     );
   }
 
-  // Show success snackbar
   void _showSuccessSnackbar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -1067,7 +1021,6 @@ class _UpdateProfilePageState extends State<UpdateProfilePage>
 
   @override
   Widget build(BuildContext context) {
-    // Calculate header height based on scroll - more dramatic effect
     double _ = (_headerHeight - _scrollOffset * 1.2).clamp(
       _minHeaderHeight,
       _headerHeight,
@@ -1081,7 +1034,6 @@ class _UpdateProfilePageState extends State<UpdateProfilePage>
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       extendBodyBehindAppBar: true,
-      // Custom SliverAppBar for collapsing effect
       body: _isLoading
           ? Center(
               child: Column(
@@ -1124,7 +1076,6 @@ class _UpdateProfilePageState extends State<UpdateProfilePage>
           : CustomScrollView(
               controller: _scrollController,
               slivers: [
-                // Custom App Bar that collapses
                 SliverAppBar(
                   expandedHeight: _headerHeight,
                   floating: false,
@@ -1185,17 +1136,13 @@ class _UpdateProfilePageState extends State<UpdateProfilePage>
                   flexibleSpace: FlexibleSpaceBar(
                     background: GestureDetector(
                       onTap: () {
-                        print("Header tapped!");
                         HapticFeedback.selectionClick();
                         _showImageSourceDialog();
                       },
                       child: Stack(
                         fit: StackFit.expand,
                         children: [
-                          // Parallax Background
                           _getParallaxImageWidget(),
-
-                          // Enhanced Gradient Overlay
                           Container(
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
@@ -1211,8 +1158,6 @@ class _UpdateProfilePageState extends State<UpdateProfilePage>
                               ),
                             ),
                           ),
-
-                          // Content overlay for placeholder
                           if (_base64Image == null && _imageFile == null)
                             Center(
                               child: AnimatedOpacity(
@@ -1269,8 +1214,6 @@ class _UpdateProfilePageState extends State<UpdateProfilePage>
                     ),
                   ),
                 ),
-
-                // Main Content
                 SliverToBoxAdapter(
                   child: FadeTransition(
                     opacity: _fadeAnimation,
@@ -1289,7 +1232,6 @@ class _UpdateProfilePageState extends State<UpdateProfilePage>
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Header indicator
                               Center(
                                 child: Container(
                                   width: 50,
@@ -1301,8 +1243,6 @@ class _UpdateProfilePageState extends State<UpdateProfilePage>
                                 ),
                               ),
                               const SizedBox(height: 32),
-
-                              // Title with enhanced styling
                               Row(
                                 children: [
                                   Container(
@@ -1343,8 +1283,6 @@ class _UpdateProfilePageState extends State<UpdateProfilePage>
                                 ),
                               ),
                               const SizedBox(height: 40),
-
-                              // Name Field
                               _buildTextField(
                                 controller: _nameController,
                                 focusNode: _nameFocus,
@@ -1352,10 +1290,7 @@ class _UpdateProfilePageState extends State<UpdateProfilePage>
                                 hint: 'Enter your full name',
                                 prefixIcon: Icons.person_outline,
                               ),
-
                               const SizedBox(height: 28),
-
-                              // About Me Field
                               _buildTextField(
                                 controller: _aboutMeController,
                                 focusNode: _aboutMeFocus,
@@ -1365,10 +1300,7 @@ class _UpdateProfilePageState extends State<UpdateProfilePage>
                                 maxLines: 4,
                                 prefixIcon: Icons.info_outline,
                               ),
-
                               const SizedBox(height: 28),
-
-                              // Birth Date Field
                               _buildSelectionField(
                                 label: 'Date of Birth',
                                 value: _selectedBirthDate != null
@@ -1379,10 +1311,7 @@ class _UpdateProfilePageState extends State<UpdateProfilePage>
                                 icon: Icons.calendar_today,
                                 iconColor: accentColor,
                               ),
-
                               const SizedBox(height: 28),
-
-                              // Hobbies Field
                               _buildSelectionField(
                                 label: 'Hobbies & Interests',
                                 value: _selectedHobbies.isNotEmpty
@@ -1396,10 +1325,7 @@ class _UpdateProfilePageState extends State<UpdateProfilePage>
                                 icon: Icons.favorite_outline,
                                 iconColor: secondaryColor,
                               ),
-
                               const SizedBox(height: 28),
-
-                              // Selected Hobbies Preview
                               if (_selectedHobbies.isNotEmpty) ...[
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1413,8 +1339,6 @@ class _UpdateProfilePageState extends State<UpdateProfilePage>
                                       ),
                                     ),
                                     const SizedBox(height: 12),
-
-                                    // Main Container - Simple and consistent with other fields
                                     Container(
                                       width: double.infinity,
                                       padding: const EdgeInsets.all(20),
@@ -1435,7 +1359,6 @@ class _UpdateProfilePageState extends State<UpdateProfilePage>
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
-                                          // Simple header with icon
                                           Row(
                                             children: [
                                               Container(
@@ -1473,11 +1396,8 @@ class _UpdateProfilePageState extends State<UpdateProfilePage>
                                             ],
                                           ),
                                           const SizedBox(height: 20),
-
-                                          // Organized hobbies grid - properly arranged and eye-pleasing
                                           LayoutBuilder(
                                             builder: (context, constraints) {
-                                              // Calculate optimal number of columns based on screen width
                                               int crossAxisCount =
                                                   constraints.maxWidth > 400
                                                   ? 3
@@ -1534,20 +1454,21 @@ class _UpdateProfilePageState extends State<UpdateProfilePage>
                                                             vertical: 10,
                                                           ),
                                                       decoration: BoxDecoration(
-                                                        gradient: LinearGradient(
-                                                          colors: [
-                                                            const Color(
-                                                              0xFFF8FAFC,
-                                                            ), // Very light gray-blue
-                                                            const Color(
-                                                              0xFFF1F5F9,
-                                                            ), // Slightly darker light gray
-                                                          ],
-                                                          begin:
-                                                              Alignment.topLeft,
-                                                          end: Alignment
-                                                              .bottomRight,
-                                                        ),
+                                                        gradient:
+                                                            LinearGradient(
+                                                              colors: [
+                                                                const Color(
+                                                                  0xFFF8FAFC,
+                                                                ),
+                                                                const Color(
+                                                                  0xFFF1F5F9,
+                                                                ),
+                                                              ],
+                                                              begin: Alignment
+                                                                  .topLeft,
+                                                              end: Alignment
+                                                                  .bottomRight,
+                                                            ),
                                                         borderRadius:
                                                             BorderRadius.circular(
                                                               16,
@@ -1644,10 +1565,7 @@ class _UpdateProfilePageState extends State<UpdateProfilePage>
                                 ),
                                 const SizedBox(height: 28),
                               ],
-
                               const SizedBox(height: 20),
-
-                              // Enhanced Save Button
                               Container(
                                 width: double.infinity,
                                 height: 60,
@@ -1723,10 +1641,7 @@ class _UpdateProfilePageState extends State<UpdateProfilePage>
                                         ),
                                 ),
                               ),
-
                               const SizedBox(height: 20),
-
-                              // **LOGOUT BUTTON**
                               SizedBox(
                                 width: double.infinity,
                                 height: 60,
@@ -1737,13 +1652,14 @@ class _UpdateProfilePageState extends State<UpdateProfilePage>
                                       color: Colors.redAccent,
                                       width: 2,
                                     ),
+                                    minimumSize: const Size.fromHeight(60),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(20),
                                     ),
                                   ),
-                                  child: const Row(
+                                  child: Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
+                                    children: const [
                                       Icon(
                                         Icons.logout,
                                         color: Colors.redAccent,
@@ -1763,7 +1679,6 @@ class _UpdateProfilePageState extends State<UpdateProfilePage>
                                   ),
                                 ),
                               ),
-
                               const SizedBox(height: 60),
                             ],
                           ),
@@ -1777,7 +1692,6 @@ class _UpdateProfilePageState extends State<UpdateProfilePage>
     );
   }
 
-  // Add this method to handle hobby deletion
   void _showDeleteHobbyDialog(String hobby) {
     showDialog(
       context: context,
@@ -1795,10 +1709,7 @@ class _UpdateProfilePageState extends State<UpdateProfilePage>
               gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFFFFFBFF), // Very light pink-white
-                  Color(0xFFF8F6FF), // Very light purple-white
-                ],
+                colors: [Color(0xFFFFFBFF), Color(0xFFF8F6FF)],
               ),
               boxShadow: [
                 BoxShadow(
@@ -1816,10 +1727,7 @@ class _UpdateProfilePageState extends State<UpdateProfilePage>
                   height: 80,
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [
-                        Color(0xFFFF6B9D), // Slightly more red-pink for warning
-                        Color(0xFF8B5DFF), // Purple-Blue
-                      ],
+                      colors: [Color(0xFFFF6B9D), Color(0xFF8B5DFF)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -1895,12 +1803,7 @@ class _UpdateProfilePageState extends State<UpdateProfilePage>
                       child: Container(
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
-                            colors: [
-                              Color(
-                                0xFFFF6B9D,
-                              ), // Slightly more red-pink for delete action
-                              Color(0xFF8B5DFF), // Purple-Blue
-                            ],
+                            colors: [Color(0xFFFF6B9D), Color(0xFF8B5DFF)],
                           ),
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
@@ -1913,9 +1816,7 @@ class _UpdateProfilePageState extends State<UpdateProfilePage>
                         ),
                         child: ElevatedButton(
                           onPressed: () {
-                            setState(() {
-                              _selectedHobbies.remove(hobby);
-                            });
+                            setState(() => _selectedHobbies.remove(hobby));
                             Navigator.pop(context);
                             HapticFeedback.lightImpact();
                             ScaffoldMessenger.of(context).showSnackBar(

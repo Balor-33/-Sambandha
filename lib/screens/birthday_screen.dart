@@ -13,30 +13,21 @@ class BirthdayScreen extends StatefulWidget {
 
 class _BirthdayScreenState extends State<BirthdayScreen> {
   DateTime? _date;
-  int? _age; // Store the calculated age
+  int? _age;
   final _format = DateFormat('dd/MM/yyyy');
 
-  // Function to calculate age from birthdate
   int calculateAge(DateTime birthDate) {
     final now = DateTime.now();
     int age = now.year - birthDate.year;
-
-    // Check if birthday hasn't occurred this year yet
     if (now.month < birthDate.month ||
         (now.month == birthDate.month && now.day < birthDate.day)) {
       age--;
     }
-
     return age;
   }
 
-  // Function to check if user is 18 or older
-  bool isEligibleAge(DateTime birthDate) {
-    int age = calculateAge(birthDate);
-    return age >= 18;
-  }
+  bool isEligibleAge(DateTime birthDate) => calculateAge(birthDate) >= 18;
 
-  // Function to get minimum allowed birth date (18 years ago)
   DateTime getMinimumBirthDate() {
     DateTime currentDate = DateTime.now();
     return DateTime(currentDate.year - 18, currentDate.month, currentDate.day);
@@ -44,31 +35,29 @@ class _BirthdayScreenState extends State<BirthdayScreen> {
 
   Future<void> _pick() async {
     final minDate = getMinimumBirthDate();
-
     final picked = await showDatePicker(
       context: context,
-      initialDate: minDate, // Start at minimum eligible date
+      initialDate: minDate,
       firstDate: DateTime(1900),
-      lastDate: minDate, // Don't allow dates newer than 18 years ago
+      lastDate: minDate,
     );
 
     if (picked != null) {
       setState(() {
         _date = picked;
-        _age = calculateAge(picked); // Store age in variable
+        _age = calculateAge(picked);
       });
     }
   }
 
   void _goNext() {
     if (_date == null) {
-      _error('Please choose your birth date');
+      _showError('Please choose your birth date');
       return;
     }
 
-    // Validate age before proceeding (using stored age)
     if (_age == null || _age! < 18) {
-      _error('You must be 18 or older to proceed');
+      _showError('You must be 18 or older to proceed');
       return;
     }
 
@@ -76,8 +65,9 @@ class _BirthdayScreenState extends State<BirthdayScreen> {
     Navigator.pushNamed(context, '/interest', arguments: widget.data);
   }
 
-  void _error(String m) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
+  void _showError(String message) => ScaffoldMessenger.of(
+    context,
+  ).showSnackBar(SnackBar(content: Text(message)));
 
   @override
   Widget build(BuildContext context) {
@@ -133,7 +123,6 @@ class _BirthdayScreenState extends State<BirthdayScreen> {
                     ),
                   ),
                   SizedBox(height: screenHeight * 0.04),
-                  // Show age if date is selected
                   if (_date != null && _age != null) ...[
                     Text(
                       'Age: $_age years',
@@ -142,7 +131,6 @@ class _BirthdayScreenState extends State<BirthdayScreen> {
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    // Show warning if under 18 (though date picker should prevent this)
                     if (_age! < 18)
                       const Text(
                         'Must be 18 or older',
@@ -153,9 +141,7 @@ class _BirthdayScreenState extends State<BirthdayScreen> {
                         ),
                       ),
                   ],
-                  SizedBox(
-                    height: screenHeight * 0.10,
-                  ), // <-- Use this instead of Spacer
+                  SizedBox(height: screenHeight * 0.10),
                   SizedBox(
                     width: double.infinity,
                     height: screenHeight * 0.07,

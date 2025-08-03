@@ -15,15 +15,16 @@ class _GenderScreenState extends State<GenderScreen> {
 
   void _goNext() {
     if (_selected == null) {
-      _error('Please pick a gender');
+      _showError('Please pick a gender');
       return;
     }
     widget.data.gender = _selected;
     Navigator.pushNamed(context, '/birthday', arguments: widget.data);
   }
 
-  void _error(String m) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
+  void _showError(String message) => ScaffoldMessenger.of(
+    context,
+  ).showSnackBar(SnackBar(content: Text(message)));
 
   Widget _pill(
     String label,
@@ -31,7 +32,7 @@ class _GenderScreenState extends State<GenderScreen> {
     double screenWidth,
     double screenHeight,
   ) {
-    final isSel = _selected == label;
+    final isSelected = _selected == label;
     return GestureDetector(
       onTap: () => setState(() => _selected = label),
       child: Container(
@@ -40,7 +41,7 @@ class _GenderScreenState extends State<GenderScreen> {
         margin: EdgeInsets.only(bottom: screenHeight * 0.02),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(screenHeight * 0.032),
-          color: isSel ? Colors.black : Colors.white,
+          color: isSelected ? Colors.black : Colors.white,
           border: Border.all(color: Colors.black, width: 1),
         ),
         child: Text(
@@ -48,7 +49,7 @@ class _GenderScreenState extends State<GenderScreen> {
           style: TextStyle(
             fontSize: screenWidth * 0.045,
             fontWeight: FontWeight.w500,
-            color: isSel ? Colors.white : Colors.black,
+            color: isSelected ? Colors.white : Colors.black,
             overflow: TextOverflow.ellipsis,
           ),
         ),

@@ -47,17 +47,11 @@ class _SignupPageState extends State<SignupPage> {
         ),
       );
     } on FirebaseAuthException catch (e) {
-      setState(() {
-        _error = e.message;
-      });
+      setState(() => _error = e.message ?? 'An error occurred');
     } catch (e) {
-      setState(() {
-        _error = 'An unexpected error occurred';
-      });
+      setState(() => _error = 'An unexpected error occurred');
     } finally {
-      setState(() {
-        _loading = false;
-      });
+      setState(() => _loading = false);
     }
   }
 
@@ -92,7 +86,6 @@ class _SignupPageState extends State<SignupPage> {
               child: Column(
                 children: [
                   SizedBox(height: screenHeight * 0.05),
-                  // Logo
                   Container(
                     width: screenWidth * 0.6,
                     height: screenWidth * 0.6,
@@ -120,8 +113,6 @@ class _SignupPageState extends State<SignupPage> {
                     textAlign: TextAlign.center,
                   ),
                   SizedBox(height: screenHeight * 0.05),
-
-                  /// EMAIL FIELD
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
@@ -143,18 +134,13 @@ class _SignupPageState extends State<SignupPage> {
                       final text = value?.trim() ?? '';
                       if (text.isEmpty) return 'Email can\'t be empty';
                       final emailRegex = RegExp(r'^[\w\.-]+@[\w\.-]+\.\w+$');
-                      if (!emailRegex.hasMatch(text)) {
+                      if (!emailRegex.hasMatch(text))
                         return 'Enter a valid email';
-                      }
                       return null;
                     },
                   ),
-
                   _errorMessage(),
-
                   SizedBox(height: screenHeight * 0.03),
-
-                  /// CONTINUE BUTTON
                   SizedBox(
                     width: double.infinity,
                     height: screenHeight * 0.07,
@@ -178,7 +164,6 @@ class _SignupPageState extends State<SignupPage> {
                             ),
                     ),
                   ),
-
                   SizedBox(height: screenHeight * 0.03),
                   Row(
                     children: [
@@ -199,8 +184,6 @@ class _SignupPageState extends State<SignupPage> {
                     ],
                   ),
                   SizedBox(height: screenHeight * 0.03),
-
-                  /// GOOGLE BUTTON
                   const Spacer(),
                   Padding(
                     padding: EdgeInsets.only(
@@ -272,11 +255,10 @@ class _PasswordSetupPageState extends State<PasswordSetupPage> {
     });
 
     try {
-      UserCredential userCredential = await _authService
-          .createUserWithEmailAndPassword(
-            email: widget.email,
-            password: _passwordController.text,
-          );
+      await _authService.createUserWithEmailAndPassword(
+        email: widget.email,
+        password: _passwordController.text,
+      );
 
       await _authService.sendEmailVerification();
 
@@ -287,33 +269,24 @@ class _PasswordSetupPageState extends State<PasswordSetupPage> {
         ),
       );
     } on FirebaseAuthException catch (e) {
-      String errorMessage = 'An error occurred';
-
-      switch (e.code) {
-        case 'email-already-in-use':
-          errorMessage = 'This email is already registered';
-          break;
-        case 'invalid-email':
-          errorMessage = 'Invalid email address';
-          break;
-        case 'weak-password':
-          errorMessage = 'Password is too weak';
-          break;
-        default:
-          errorMessage = e.message ?? 'An error occurred';
-      }
-
-      setState(() {
-        _error = errorMessage;
-      });
+      setState(() => _error = _getErrorMessage(e.code));
     } catch (e) {
-      setState(() {
-        _error = 'An unexpected error occurred';
-      });
+      setState(() => _error = 'An unexpected error occurred');
     } finally {
-      setState(() {
-        _loading = false;
-      });
+      setState(() => _loading = false);
+    }
+  }
+
+  String _getErrorMessage(String code) {
+    switch (code) {
+      case 'email-already-in-use':
+        return 'This email is already registered';
+      case 'invalid-email':
+        return 'Invalid email address';
+      case 'weak-password':
+        return 'Password is too weak';
+      default:
+        return 'An error occurred';
     }
   }
 
@@ -405,8 +378,6 @@ class _PasswordSetupPageState extends State<PasswordSetupPage> {
                     style: TextStyle(fontSize: 16, color: Colors.grey),
                   ),
                   const SizedBox(height: 40),
-
-                  /// PASSWORD FIELD
                   TextFormField(
                     controller: _passwordController,
                     obscureText: _obscurePassword,
@@ -424,9 +395,7 @@ class _PasswordSetupPageState extends State<PasswordSetupPage> {
                           color: Colors.grey[400],
                         ),
                         onPressed: () {
-                          setState(() {
-                            _obscurePassword = !_obscurePassword;
-                          });
+                          setState(() => _obscurePassword = !_obscurePassword);
                         },
                       ),
                       border: OutlineInputBorder(
@@ -448,10 +417,7 @@ class _PasswordSetupPageState extends State<PasswordSetupPage> {
                     },
                     onChanged: (value) => setState(() {}),
                   ),
-
                   const SizedBox(height: 16),
-
-                  /// CONFIRM PASSWORD FIELD
                   TextFormField(
                     controller: _confirmPasswordController,
                     obscureText: _obscureConfirmPassword,
@@ -469,9 +435,10 @@ class _PasswordSetupPageState extends State<PasswordSetupPage> {
                           color: Colors.grey[400],
                         ),
                         onPressed: () {
-                          setState(() {
-                            _obscureConfirmPassword = !_obscureConfirmPassword;
-                          });
+                          setState(
+                            () => _obscureConfirmPassword =
+                                !_obscureConfirmPassword,
+                          );
                         },
                       ),
                       border: OutlineInputBorder(
@@ -492,10 +459,7 @@ class _PasswordSetupPageState extends State<PasswordSetupPage> {
                       return null;
                     },
                   ),
-
                   const SizedBox(height: 20),
-
-                  /// PASSWORD REQUIREMENTS
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -538,12 +502,8 @@ class _PasswordSetupPageState extends State<PasswordSetupPage> {
                       ],
                     ),
                   ),
-
                   _errorMessage(),
-
                   const Spacer(),
-
-                  /// CREATE ACCOUNT BUTTON
                   SizedBox(
                     width: double.infinity,
                     height: 56,
@@ -567,7 +527,6 @@ class _PasswordSetupPageState extends State<PasswordSetupPage> {
                             ),
                     ),
                   ),
-
                   const SizedBox(height: 40),
                 ],
               ),
@@ -617,13 +576,9 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
 
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_resendCountdown > 0) {
-        setState(() {
-          _resendCountdown--;
-        });
+        setState(() => _resendCountdown--);
       } else {
-        setState(() {
-          _canResend = true;
-        });
+        setState(() => _canResend = true);
         timer.cancel();
       }
     });
@@ -642,32 +597,24 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
       if (user != null && user.emailVerified) {
         Navigator.pushReplacementNamed(context, '/first-name');
       } else {
-        setState(() {
-          _error = 'Please verify your email first';
-        });
+        setState(() => _error = 'Please verify your email first');
       }
     } catch (e) {
-      setState(() {
-        _error = 'Error checking verification status';
-      });
+      setState(() => _error = 'Error checking verification status');
     } finally {
-      setState(() {
-        _loading = false;
-      });
+      setState(() => _loading = false);
     }
   }
 
   void _resendVerification() async {
     try {
       await _authService.sendEmailVerification();
-
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Verification email sent!'),
           backgroundColor: Colors.green,
         ),
       );
-
       _startResendTimer();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -743,12 +690,8 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                 ),
-
                 _errorMessage(),
-
                 const SizedBox(height: 40),
-
-                /// VERIFY BUTTON
                 SizedBox(
                   width: double.infinity,
                   height: 56,
@@ -772,10 +715,7 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
                           ),
                   ),
                 ),
-
                 const SizedBox(height: 16),
-
-                /// RESEND BUTTON
                 TextButton(
                   onPressed: _canResend ? _resendVerification : null,
                   child: Text(
@@ -788,9 +728,7 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
                     ),
                   ),
                 ),
-
                 const Spacer(),
-
                 Padding(
                   padding: const EdgeInsets.only(bottom: 40),
                   child: Text(

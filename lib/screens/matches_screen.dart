@@ -61,7 +61,6 @@ class _MatchesScreenState extends State<MatchesScreen> {
       final chatId = _chatService.getChatId(_currentUserId!, matchUserId);
       return await _chatService.getUnreadMessageCount(chatId);
     } catch (e) {
-      print('Error getting unread count: $e');
       return 0;
     }
   }
@@ -75,7 +74,6 @@ class _MatchesScreenState extends State<MatchesScreen> {
       final profilePic = await _userDataService.getUserProfilePicture(userId);
       return profilePic ?? '';
     } catch (e) {
-      print('Error getting user image: $e');
       return '';
     }
   }
@@ -117,7 +115,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Error opening chat: $e')));
+        ).showSnackBar(const SnackBar(content: Text('Error opening chat')));
       }
     }
   }
@@ -200,7 +198,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
                         radius: screenWidth * 0.07,
                         child: const CircularProgressIndicator(strokeWidth: 2),
                       ),
-                      title: Text('Loading...'),
+                      title: const Text('Loading...'),
                       subtitle: const Text(''),
                     );
                   }

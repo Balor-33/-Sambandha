@@ -6,7 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'homepage.dart'; // Make sure this path is correct for your project
+import 'homepage.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -21,11 +21,8 @@ class _ProfilePageState extends State<ProfilePage> {
   final ImagePicker _picker = ImagePicker();
   bool _isLoading = false;
   bool _isUploading = false;
-
-  // Collection reference - now using user_interests as primary collection
   static const String USER_INTERESTS_COLLECTION = 'user_interests';
 
-  // Get current user
   User? get currentUser => FirebaseAuth.instance.currentUser;
 
   @override
@@ -34,14 +31,11 @@ class _ProfilePageState extends State<ProfilePage> {
     _loadExistingProfilePicture();
   }
 
-  // Load existing profile picture from Firebase (now from user_interests collection)
   Future<void> _loadExistingProfilePicture() async {
     if (currentUser == null) return;
 
     try {
       setState(() => _isLoading = true);
-
-      // Load from user_interests collection
       DocumentSnapshot userDoc = await FirebaseFirestore.instance
           .collection(USER_INTERESTS_COLLECTION)
           .doc(currentUser!.uid)
@@ -57,57 +51,21 @@ class _ProfilePageState extends State<ProfilePage> {
         }
       }
     } catch (e) {
-      _showErrorSnackbar('Error loading profile picture: $e');
+      _showErrorSnackbar('Error loading profile picture');
     } finally {
       setState(() => _isLoading = false);
     }
   }
 
-  // Request permissions based on Android version and source
   Future<bool> _requestPermissions(ImageSource source) async {
     if (source == ImageSource.camera) {
-      // For camera, we need camera permission
-      PermissionStatus cameraStatus = await Permission.camera.request();
-      if (cameraStatus != PermissionStatus.granted) {
-        _showErrorSnackbar('Camera permission is required to take photos.');
-        return false;
-      }
-      return true;
+      return await Permission.camera.request().isGranted;
     } else {
-      // For gallery, try different permissions based on Android version
-      try {
-        // Try photos permission first (Android 13+)
-        PermissionStatus photosStatus = await Permission.photos.request();
-        if (photosStatus == PermissionStatus.granted) {
-          return true;
-        }
-
-        // If photos permission is not available, try storage permission
-        PermissionStatus storageStatus = await Permission.storage.request();
-        if (storageStatus == PermissionStatus.granted) {
-          return true;
-        }
-
-        // Try external storage permission as fallback
-        PermissionStatus externalStorageStatus = await Permission
-            .manageExternalStorage
-            .request();
-        if (externalStorageStatus == PermissionStatus.granted) {
-          return true;
-        }
-
-        _showErrorSnackbar('Storage permission is required to access photos.');
-        return false;
-      } catch (e) {
-        print('Permission error: $e');
-        // If permission handling fails, try to proceed anyway
-        // Sometimes the image picker works without explicit permissions
-        return true;
-      }
+      return await Permission.photos.request().isGranted ||
+          await Permission.storage.request().isGranted;
     }
   }
 
-  // Show image source selection dialog
   Future<void> _showImageSourceDialog() async {
     showDialog(
       context: context,
@@ -116,10 +74,14 @@ class _ProfilePageState extends State<ProfilePage> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          title: const Text('Select Image Source'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              const Text(
+                'Select Image Source',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
               ListTile(
                 leading: const Icon(Icons.camera_alt, color: Color(0xFFE94057)),
                 title: const Text('Camera'),
@@ -146,56 +108,37 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // Pick image from camera or gallery
   Future<void> _pickImage(ImageSource source) async {
     try {
-      // Request permissions based on source
-      bool hasPermission = await _requestPermissions(source);
-      if (!hasPermission) {
-        return;
-      }
+      if (!await _requestPermissions(source)) return;
 
       final XFile? pickedFile = await _picker.pickImage(
         source: source,
         maxWidth: 512,
         maxHeight: 512,
         imageQuality: 85,
-        requestFullMetadata: false, // Add this to avoid permission issues
       );
 
       if (pickedFile != null) {
-        setState(() {
-          _imageFile = File(pickedFile.path);
-        });
-
-        // Convert to base64
+        setState(() => _imageFile = File(pickedFile.path));
         await _convertToBase64();
-      } else {
-        print('No image selected');
       }
     } catch (e) {
-      print('Error picking image: $e');
-      _showErrorSnackbar('Error picking image: $e');
+      _showErrorSnackbar('Error picking image');
     }
   }
 
-  // Convert image to base64 string
   Future<void> _convertToBase64() async {
     if (_imageFile == null) return;
 
     try {
       Uint8List imageBytes = await _imageFile!.readAsBytes();
-      String base64String = base64Encode(imageBytes);
-
-      setState(() {
-        _base64Image = base64String;
-      });
+      setState(() => _base64Image = base64Encode(imageBytes));
     } catch (e) {
-      _showErrorSnackbar('Error converting image: $e');
+      _showErrorSnackbar('Error converting image');
     }
   }
 
-  // Navigate to homepage
   void _navigateToHomepage() {
     Navigator.pushReplacement(
       context,
@@ -203,42 +146,29 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // Upload profile picture to Firebase (now saves to user_interests collection)
   Future<void> _uploadProfilePicture() async {
     if (_base64Image == null || currentUser == null) return;
 
     try {
       setState(() => _isUploading = true);
-
-      // Save to user_interests collection with comprehensive user data
       await FirebaseFirestore.instance
           .collection(USER_INTERESTS_COLLECTION)
           .doc(currentUser!.uid)
           .set({
             'profilePicture': _base64Image,
             'profilePictureUpdatedAt': FieldValue.serverTimestamp(),
-            'email': currentUser!.email,
-            'uid': currentUser!.uid,
-            'userId': currentUser!.uid, // Add userId for consistency
             'updatedAt': FieldValue.serverTimestamp(),
-            // If this is the first time, add createdAt as well
-            'createdAt': FieldValue.serverTimestamp(),
           }, SetOptions(merge: true));
 
       _showSuccessSnackbar('Profile picture uploaded successfully!');
-
-      // Navigate to homepage after successful upload
       _navigateToHomepage();
     } catch (e) {
-      _showErrorSnackbar('Error uploading profile picture: $e');
+      _showErrorSnackbar('Error uploading profile picture');
     } finally {
       setState(() => _isUploading = false);
     }
   }
 
-  // Remove profile picture (now from user_interests collection)
-
-  // Create basic user profile if it doesn't exist
   Future<void> _ensureUserProfileExists() async {
     if (currentUser == null) return;
 
@@ -247,28 +177,18 @@ class _ProfilePageState extends State<ProfilePage> {
           .collection(USER_INTERESTS_COLLECTION)
           .doc(currentUser!.uid);
 
-      final docSnapshot = await docRef.get();
-
-      if (!docSnapshot.exists) {
-        // Create basic profile with default values
+      if (!(await docRef.get()).exists) {
         await docRef.set({
           'userId': currentUser!.uid,
           'email': currentUser!.email,
-          'uid': currentUser!.uid,
-          'name': currentUser!.displayName ?? '',
-          'gender': <String>[],
-          'interests': <String>[],
-          'hobbies': <String>[],
           'createdAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
         });
       }
     } catch (e) {
-      print('Error ensuring user profile exists: $e');
+      _showErrorSnackbar('Error creating profile');
     }
   }
 
-  // Show error snackbar
   void _showErrorSnackbar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -279,7 +199,6 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // Show success snackbar
   void _showSuccessSnackbar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -290,13 +209,11 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // Get image widget from base64 string
   Widget _getImageWidget() {
     if (_base64Image != null) {
       try {
-        Uint8List imageBytes = base64Decode(_base64Image!);
         return Image.memory(
-          imageBytes,
+          base64Decode(_base64Image!),
           width: 200,
           height: 200,
           fit: BoxFit.cover,
@@ -352,8 +269,6 @@ class _ProfilePageState extends State<ProfilePage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 20),
-
-                    // Title
                     const Text(
                       'Add your profile\npicture',
                       style: TextStyle(
@@ -363,10 +278,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         height: 1.2,
                       ),
                     ),
-
                     const SizedBox(height: 16),
-
-                    // Subtitle
                     const Text(
                       '"Every face tells a story, let yours begin with the love you deserve."',
                       style: TextStyle(
@@ -375,14 +287,10 @@ class _ProfilePageState extends State<ProfilePage> {
                         height: 1.4,
                       ),
                     ),
-
                     const SizedBox(height: 60),
-
-                    // Profile picture section
                     Center(
                       child: Stack(
                         children: [
-                          // Profile picture container
                           Container(
                             width: 200,
                             height: 200,
@@ -395,8 +303,6 @@ class _ProfilePageState extends State<ProfilePage> {
                             ),
                             child: ClipOval(child: _getImageWidget()),
                           ),
-
-                          // Add button
                           Positioned(
                             bottom: 0,
                             right: 0,
@@ -429,10 +335,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         ],
                       ),
                     ),
-
                     const SizedBox(height: 40),
-
-                    // Settings text
                     const Center(
                       child: Text(
                         'You can always change it\nlater from the Settings.',
@@ -444,10 +347,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                       ),
                     ),
-
                     const Spacer(),
-
-                    // Finish button
                     Container(
                       width: double.infinity,
                       height: 56,

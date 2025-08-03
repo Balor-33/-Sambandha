@@ -23,7 +23,6 @@ class WelcomePage extends StatelessWidget {
             child: Column(
               children: [
                 SizedBox(height: screenHeight * 0.10),
-                // Logo
                 Container(
                   width: screenWidth * 0.6,
                   height: screenWidth * 0.6,
@@ -53,8 +52,6 @@ class WelcomePage extends StatelessWidget {
                 ),
                 const Spacer(),
                 SizedBox(height: screenHeight * 0.08),
-
-                /// SIGN UP BUTTON
                 SizedBox(
                   width: double.infinity,
                   height: screenHeight * 0.07,
@@ -83,10 +80,7 @@ class WelcomePage extends StatelessWidget {
                     ),
                   ),
                 ),
-
                 SizedBox(height: screenHeight * 0.02),
-
-                /// LOG IN BUTTON
                 SizedBox(
                   width: double.infinity,
                   height: screenHeight * 0.07,
@@ -115,7 +109,6 @@ class WelcomePage extends StatelessWidget {
                     ),
                   ),
                 ),
-
                 SizedBox(height: screenHeight * 0.03),
                 Row(
                   children: [
@@ -133,7 +126,6 @@ class WelcomePage extends StatelessWidget {
                   ],
                 ),
                 SizedBox(height: screenHeight * 0.03),
-
                 SizedBox(height: screenHeight * 0.05),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -212,7 +204,6 @@ class _LoginPageState extends State<LoginPage> {
       }
     } on FirebaseAuthException catch (e) {
       String errorMessage = 'An error occurred';
-
       switch (e.code) {
         case 'user-not-found':
           errorMessage = 'No account found with this email';
@@ -232,27 +223,12 @@ class _LoginPageState extends State<LoginPage> {
         default:
           errorMessage = e.message ?? 'An error occurred';
       }
-
-      setState(() {
-        _error = errorMessage;
-      });
+      setState(() => _error = errorMessage);
     } catch (e) {
-      setState(() {
-        _error = 'An unexpected error occurred';
-      });
+      setState(() => _error = 'An unexpected error occurred');
     } finally {
-      setState(() {
-        _loading = false;
-      });
+      setState(() => _loading = false);
     }
-  }
-
-  Widget _errorMessage() {
-    if (_error == null) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Text(_error!, style: const TextStyle(color: Colors.red)),
-    );
   }
 
   @override
@@ -286,7 +262,6 @@ class _LoginPageState extends State<LoginPage> {
               child: Column(
                 children: [
                   SizedBox(height: screenHeight * 0.05),
-                  // Logo
                   Container(
                     width: screenWidth * 0.5,
                     height: screenWidth * 0.5,
@@ -314,8 +289,6 @@ class _LoginPageState extends State<LoginPage> {
                     textAlign: TextAlign.center,
                   ),
                   SizedBox(height: screenHeight * 0.05),
-
-                  /// EMAIL FIELD
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
@@ -337,16 +310,12 @@ class _LoginPageState extends State<LoginPage> {
                       final text = value?.trim() ?? '';
                       if (text.isEmpty) return 'Email can\'t be empty';
                       final emailRegex = RegExp(r'^[\w\.-]+@[\w\.-]+\.\w+$');
-                      if (!emailRegex.hasMatch(text)) {
+                      if (!emailRegex.hasMatch(text))
                         return 'Enter a valid email';
-                      }
                       return null;
                     },
                   ),
-
                   SizedBox(height: screenHeight * 0.02),
-
-                  /// PASSWORD FIELD
                   TextFormField(
                     controller: _passwordController,
                     obscureText: _obscurePassword,
@@ -364,9 +333,7 @@ class _LoginPageState extends State<LoginPage> {
                           color: Colors.grey[400],
                         ),
                         onPressed: () {
-                          setState(() {
-                            _obscurePassword = !_obscurePassword;
-                          });
+                          setState(() => _obscurePassword = !_obscurePassword);
                         },
                       ),
                       border: OutlineInputBorder(
@@ -378,16 +345,12 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                     validator: (value) {
-                      if (value == null || value.isEmpty) {
+                      if (value == null || value.isEmpty)
                         return 'Password can\'t be empty';
-                      }
                       return null;
                     },
                   ),
-
                   SizedBox(height: screenHeight * 0.01),
-
-                  /// FORGOT PASSWORD LINK
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
@@ -405,12 +368,15 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                   ),
-
-                  _errorMessage(),
-
+                  if (_error != null)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Text(
+                        _error!,
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                    ),
                   SizedBox(height: screenHeight * 0.03),
-
-                  /// LOG IN BUTTON
                   SizedBox(
                     width: double.infinity,
                     height: screenHeight * 0.07,
@@ -434,7 +400,6 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                     ),
                   ),
-
                   SizedBox(height: screenHeight * 0.03),
                   Row(
                     children: [
@@ -453,10 +418,7 @@ class _LoginPageState extends State<LoginPage> {
                     ],
                   ),
                   SizedBox(height: screenHeight * 0.03),
-
                   const Spacer(),
-
-                  /// SIGN UP LINK
                   Padding(
                     padding: const EdgeInsets.only(bottom: 40, top: 20),
                     child: Row(
@@ -533,13 +495,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
     try {
       await _authService.sendPasswordResetEmail(_emailController.text.trim());
-
-      setState(() {
-        _emailSent = true;
-      });
+      setState(() => _emailSent = true);
     } on FirebaseAuthException catch (e) {
       String errorMessage = 'An error occurred';
-
       switch (e.code) {
         case 'user-not-found':
           errorMessage = 'No account found with this email';
@@ -550,27 +508,12 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         default:
           errorMessage = e.message ?? 'An error occurred';
       }
-
-      setState(() {
-        _error = errorMessage;
-      });
+      setState(() => _error = errorMessage);
     } catch (e) {
-      setState(() {
-        _error = 'An unexpected error occurred';
-      });
+      setState(() => _error = 'An unexpected error occurred');
     } finally {
-      setState(() {
-        _loading = false;
-      });
+      setState(() => _loading = false);
     }
-  }
-
-  Widget _errorMessage() {
-    if (_error == null) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Text(_error!, style: const TextStyle(color: Colors.red)),
-    );
   }
 
   @override
@@ -624,7 +567,6 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                 ),
-
                 if (_emailSent) ...[
                   SizedBox(height: screenHeight * 0.02),
                   Text(
@@ -666,18 +608,21 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                         final text = value?.trim() ?? '';
                         if (text.isEmpty) return 'Email can\'t be empty';
                         final emailRegex = RegExp(r'^[\w\.-]+@[\w\.-]+\.\w+$');
-                        if (!emailRegex.hasMatch(text)) {
+                        if (!emailRegex.hasMatch(text))
                           return 'Enter a valid email';
-                        }
                         return null;
                       },
                     ),
                   ),
-
-                  _errorMessage(),
-
+                  if (_error != null)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Text(
+                        _error!,
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                    ),
                   SizedBox(height: screenHeight * 0.03),
-
                   SizedBox(
                     width: double.infinity,
                     height: screenHeight * 0.07,
@@ -702,9 +647,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     ),
                   ),
                 ],
-
                 const Spacer(),
-
                 if (_emailSent) ...[
                   TextButton(
                     onPressed: () {
@@ -719,7 +662,6 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     ),
                   ),
                 ],
-
                 Padding(
                   padding: const EdgeInsets.only(bottom: 40),
                   child: Row(
@@ -730,9 +672,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                         style: TextStyle(color: Colors.grey[600], fontSize: 14),
                       ),
                       GestureDetector(
-                        onTap: () {
-                          Navigator.pop(context);
-                        },
+                        onTap: () => Navigator.pop(context),
                         child: const Text(
                           'Log in',
                           style: TextStyle(

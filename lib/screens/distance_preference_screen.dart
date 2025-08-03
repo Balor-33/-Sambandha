@@ -1,40 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:location/location.dart';
 import '../model/profile_setup_data.dart';
 import '../widgets/next_button.dart';
 import 'relationship_target_screen.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:location/location.dart';
 
 Future<GeoPoint?> getCurrentGeoPoint() async {
   Location location = Location();
 
-  // Check if location services are enabled
   bool serviceEnabled = await location.serviceEnabled();
   if (!serviceEnabled) {
     serviceEnabled = await location.requestService();
     if (!serviceEnabled) return null;
   }
 
-  // Check for permission
   PermissionStatus permissionGranted = await location.hasPermission();
   if (permissionGranted == PermissionStatus.denied) {
     permissionGranted = await location.requestPermission();
     if (permissionGranted != PermissionStatus.granted) return null;
   }
 
-  // Get the location data
   LocationData locationData = await location.getLocation();
-
   if (locationData.latitude != null && locationData.longitude != null) {
     return GeoPoint(locationData.latitude!, locationData.longitude!);
-  } else {
-    return null;
   }
+  return null;
 }
 
 class DistancePreferenceScreen extends StatefulWidget {
   const DistancePreferenceScreen({super.key, required this.data});
-
   final ProfileSetupData data;
 
   @override
@@ -48,21 +42,19 @@ class _DistancePreferenceScreenState extends State<DistancePreferenceScreen> {
   final double _maxDistance = 100.0;
 
   void _continueToNext() async {
-    // Save distance preference to profile data
     widget.data.distancePreference = _distanceValue.round();
 
-    // Get current location and save to profile data
     try {
       final currentLocation = await getCurrentGeoPoint();
       if (currentLocation != null) {
         widget.data.currentLocation = currentLocation;
       }
     } catch (e) {
-      // If location fails, continue without it
-      print('Failed to get location: $e');
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to get location')));
     }
 
-    // Navigate to relationship target screen
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -81,7 +73,6 @@ class _DistancePreferenceScreenState extends State<DistancePreferenceScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Back button
               IconButton(
                 onPressed: () => Navigator.pop(context),
                 icon: const Icon(
@@ -92,10 +83,7 @@ class _DistancePreferenceScreenState extends State<DistancePreferenceScreen> {
                 padding: EdgeInsets.zero,
                 alignment: Alignment.centerLeft,
               ),
-
               const SizedBox(height: 60),
-
-              // Main title
               const Text(
                 "YOUR DISTANCE\nPREFERENCE?",
                 style: TextStyle(
@@ -106,10 +94,7 @@ class _DistancePreferenceScreenState extends State<DistancePreferenceScreen> {
                   letterSpacing: 0.5,
                 ),
               ),
-
               const SizedBox(height: 24),
-
-              // Description text
               Text(
                 'Use slider to set the maximum distance you want your potential matches to be located.',
                 style: TextStyle(
@@ -118,10 +103,7 @@ class _DistancePreferenceScreenState extends State<DistancePreferenceScreen> {
                   height: 1.4,
                 ),
               ),
-
               const SizedBox(height: 60),
-
-              // Distance preference section
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -146,10 +128,7 @@ class _DistancePreferenceScreenState extends State<DistancePreferenceScreen> {
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 24),
-
-                  // Custom slider
                   SliderTheme(
                     data: SliderTheme.of(context).copyWith(
                       activeTrackColor: Colors.red.shade400,
@@ -177,10 +156,7 @@ class _DistancePreferenceScreenState extends State<DistancePreferenceScreen> {
                   ),
                 ],
               ),
-
               const SizedBox(height: 60),
-
-              // Settings note
               Center(
                 child: RichText(
                   textAlign: TextAlign.center,
@@ -205,13 +181,8 @@ class _DistancePreferenceScreenState extends State<DistancePreferenceScreen> {
                   ),
                 ),
               ),
-
-              // Spacer to push button to bottom
               const Spacer(),
-
-              // Next button
               NextButton(label: 'NEXT', onPressed: _continueToNext),
-
               const SizedBox(height: 16),
             ],
           ),

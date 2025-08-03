@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../model/profile_setup_data.dart';
-import 'gender_screen.dart'; // Make sure this import exists
+import 'gender_screen.dart';
 
 class FirstNameScreen extends StatefulWidget {
   final ProfileSetupData data;
@@ -54,8 +54,6 @@ class _FirstNameScreenState extends State<FirstNameScreen> {
                         child: Icon(Icons.arrow_back, size: screenWidth * 0.07),
                       ),
                       SizedBox(height: screenHeight * 0.04),
-
-                      // Name Section
                       Text(
                         "What's your first name?",
                         style: TextStyle(
@@ -85,7 +83,6 @@ class _FirstNameScreenState extends State<FirstNameScreen> {
                           fontSize: screenWidth * 0.035,
                           color: Colors.grey,
                         ),
-                        overflow: TextOverflow.ellipsis,
                         maxLines: 2,
                       ),
                       SizedBox(height: screenHeight * 0.01),
@@ -95,19 +92,14 @@ class _FirstNameScreenState extends State<FirstNameScreen> {
                           fontSize: screenWidth * 0.035,
                           fontWeight: FontWeight.bold,
                         ),
-                        overflow: TextOverflow.ellipsis,
                       ),
-
                       SizedBox(height: screenHeight * 0.04),
-
-                      // About Me Section
                       Text(
                         "Tell me about yourself",
                         style: TextStyle(
                           fontSize: screenWidth * 0.06,
                           fontWeight: FontWeight.bold,
                         ),
-                        overflow: TextOverflow.ellipsis,
                       ),
                       SizedBox(height: screenHeight * 0.02),
                       TextField(
@@ -134,13 +126,8 @@ class _FirstNameScreenState extends State<FirstNameScreen> {
                           fontSize: screenWidth * 0.035,
                           color: Colors.grey,
                         ),
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 2,
                       ),
-
                       const Spacer(),
-
-                      // Bottom button section - stays at bottom
                       Padding(
                         padding: EdgeInsets.only(top: screenHeight * 0.04),
                         child: SizedBox(
@@ -148,7 +135,6 @@ class _FirstNameScreenState extends State<FirstNameScreen> {
                           height: screenHeight * 0.07,
                           child: ElevatedButton(
                             onPressed: () {
-                              // Validate inputs
                               if (_nameController.text.trim().isEmpty) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
@@ -159,27 +145,16 @@ class _FirstNameScreenState extends State<FirstNameScreen> {
                                 return;
                               }
 
-                              // Update the profile data
-                              final updatedData = widget.data;
-                              updatedData.firstName = _nameController.text
+                              widget.data.firstName = _nameController.text
                                   .trim();
-                              updatedData.aboutMe = _aboutMeController.text
+                              widget.data.aboutMe = _aboutMeController.text
                                   .trim();
-
-                              // Debug logging
-                              print('FirstNameScreen - Data being passed:');
-                              print('Name: "${updatedData.firstName}"');
-                              print('About Me: "${updatedData.aboutMe}"');
-                              print(
-                                'About Me length: ${updatedData.aboutMe?.length ?? 0}',
-                              );
-                              print('Full data: ${updatedData.toString()}');
 
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) =>
-                                      GenderScreen(data: updatedData),
+                                      GenderScreen(data: widget.data),
                                 ),
                               );
                             },

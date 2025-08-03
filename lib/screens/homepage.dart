@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 import '../services/recommendation_service.dart';
@@ -44,8 +45,7 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
   final FirebaseUserService _firebaseUserService = FirebaseUserService();
   StreamSubscription<List<UserAction>>? _matchSubscription;
   final Set<String> _processedMatchIds = {};
-  final Set<String> _shownMatchUserIds =
-      {}; // Track users who already had match dialog shown
+  Set<String> _shownMatchUserIds = {};
   final List<UserAction> _matches = [];
   bool _showMatchDialog = false;
   String? _matchedUserName;
@@ -57,6 +57,7 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _initializeAnimations();
+    _loadShownMatchUserIds();
     _loadRecommendedUsers();
     _listenForMatches();
     _initCurrentUserProfilePicture();
@@ -64,6 +65,37 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
       vsync: this,
       duration: const Duration(milliseconds: 1200),
     )..repeat(reverse: true);
+  }
+
+  Future<void> _loadShownMatchUserIds() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final currentUserId = _firebaseUserService.currentUserId;
+
+      if (currentUserId != null) {
+        final key = 'shown_match_users_$currentUserId';
+        final shownUsersList = prefs.getStringList(key) ?? [];
+        setState(() {
+          _shownMatchUserIds = shownUsersList.toSet();
+        });
+      }
+    } catch (e) {
+      // Error handled silently
+    }
+  }
+
+  Future<void> _saveShownMatchUserIds() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final currentUserId = _firebaseUserService.currentUserId;
+
+      if (currentUserId != null) {
+        final key = 'shown_match_users_$currentUserId';
+        await prefs.setStringList(key, _shownMatchUserIds.toList());
+      }
+    } catch (e) {
+      // Error handled silently
+    }
   }
 
   void _initializeAnimations() {
@@ -162,13 +194,9 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
         _errorMessage = null;
       });
 
-      print('Loading recommended users...');
-
       final recommendedUsers = await _recommendationService.getRecommendedUsers(
         limit: 20,
       );
-
-      print('Loaded ${recommendedUsers.length} recommended users');
 
       if (mounted) {
         setState(() {
@@ -183,11 +211,10 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
         }
       }
     } catch (e) {
-      print('Error loading recommended users: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _errorMessage = e.toString();
+          _errorMessage = 'Failed to load recommendations';
         });
       }
     }
@@ -195,40 +222,24 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
 
   void _listenForMatches() {
     final userId = _firebaseUserService.currentUserId;
-    if (userId == null) {
-      print('Error: Current user ID is null, cannot listen for matches');
-      return;
-    }
-
-    print('Starting to listen for matches for user: $userId');
+    if (userId == null) return;
 
     _matchSubscription = _firebaseUserService
         .getActionsTargetingUserStream(userId: userId)
         .listen(
           (actions) async {
-            print('Received ${actions.length} actions targeting user $userId');
-
             for (final action in actions) {
-              print(
-                'Processing action: ${action.actionId}, type: ${action.actionType}, '
-                'matchStatus: ${action.matchStatus}, actorUserId: ${action.actorUserId}',
-              );
-
               if (action.actionType == 'like' && action.matchStatus == true) {
                 await _handleNewMatch(action);
               }
             }
           },
           onError: (error) {
-            print('Error listening for matches: $error');
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    'Connection error: Unable to receive match notifications',
-                  ),
+                const SnackBar(
+                  content: Text('Connection error'),
                   backgroundColor: Colors.orange,
-                  duration: const Duration(seconds: 3),
                 ),
               );
             }
@@ -240,19 +251,16 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
   Future<void> _handleNewMatch(UserAction action) async {
     try {
       if (_processedMatchIds.contains(action.actionId)) {
-        print('Match already processed for action ID: ${action.actionId}');
         return;
       }
 
-      // Check if we've already shown a match dialog for this user
       if (_shownMatchUserIds.contains(action.actorUserId)) {
-        print('Match dialog already shown for user: ${action.actorUserId}');
         return;
       }
 
-      print('New match detected! Action ID: ${action.actionId}');
       _processedMatchIds.add(action.actionId);
-      _shownMatchUserIds.add(action.actorUserId); // Mark this user as shown
+      _shownMatchUserIds.add(action.actorUserId);
+      await _saveShownMatchUserIds();
 
       await _loadMatchedUserProfilePicture(action.actorUserId);
 
@@ -273,22 +281,18 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
           _matchedUserName = matchedUserName;
         });
 
-        print('Match dialog displayed for user: $matchedUserName');
-
         try {
           HapticFeedback.heavyImpact();
         } catch (e) {
-          print('Haptic feedback not available: $e');
+          // Haptic feedback not available
         }
       }
     } catch (e) {
-      print('Error handling new match: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Error processing match notification'),
+          const SnackBar(
+            content: Text('Error processing match'),
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -314,49 +318,30 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
           targetRelationScore: 0,
         ),
       );
-
       return matchedUser.name;
     } catch (e) {
-      print('Error getting matched user from recommendations: $e');
       return 'Someone';
     }
   }
 
   Future<String> _getMatchedUserNameFromFirebase(String userId) async {
     try {
-      print('Fetching user data from Firebase for userId: $userId');
       final userData = await _firebaseUserService.getUserInterests(userId);
-
-      final name = userData?['name']?.toString() ?? 'Someone';
-      print('Retrieved name from Firebase: $name');
-
-      return name;
+      return userData?['name']?.toString() ?? 'Someone';
     } catch (e) {
-      print('Error getting matched user name from Firebase: $e');
       return 'Someone';
     }
   }
 
   @override
   void dispose() {
-    print('Disposing homepage resources...');
-
     _cardController.dispose();
     _slideController.dispose();
     _flashController.dispose();
     _passButtonController.dispose();
     _likeButtonController.dispose();
     _pulseController?.dispose();
-
-    _matchSubscription
-        ?.cancel()
-        .then((_) {
-          print('Match subscription cancelled successfully');
-        })
-        .catchError((error) {
-          print('Error cancelling match subscription: $error');
-        });
-
+    _matchSubscription?.cancel();
     super.dispose();
   }
 
@@ -374,7 +359,6 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
 
   Future<void> _loadMatchedUserProfilePicture(String matchedUserId) async {
     try {
-      print('Loading profile picture for matched user: $matchedUserId');
       final pic = await _firebaseUserService.getUserProfilePicture(
         matchedUserId,
       );
@@ -384,10 +368,7 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
           _matchedUserProfilePicture = pic;
         });
       }
-
-      print('Profile picture loaded successfully');
     } catch (e) {
-      print('Error loading matched user profile picture: $e');
       if (mounted) {
         setState(() {
           _matchedUserProfilePicture = null;
@@ -397,7 +378,15 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
   }
 
   void _onItemTapped(int index) {
-    if (index == 3) {
+    if (index == 1) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const MatchesScreen()),
+      );
+      return;
+    }
+
+    if (index == 2) {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const UpdateProfilePage()),
@@ -455,7 +444,11 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
         });
       }
     } catch (e) {
-      print('Error loading more recommendations: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to load more profiles')),
+        );
+      }
     }
   }
 
@@ -485,19 +478,15 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
     final targetUserName = _recommendedUsers[_currentProfileIndex].name;
 
     try {
-      print('Handling $actionType action for user: $targetUserId');
-
       final result = await _firebaseUserService.recordUserAction(
         targetUserId: targetUserId,
         actionType: actionType,
       );
 
       if (actionType == 'like' && result == true) {
-        print('Immediate match detected!');
-
-        // Check if we've already shown dialog for this user
         if (!_shownMatchUserIds.contains(targetUserId)) {
-          _shownMatchUserIds.add(targetUserId); // Mark as shown
+          _shownMatchUserIds.add(targetUserId);
+          await _saveShownMatchUserIds();
 
           await _loadMatchedUserProfilePicture(targetUserId);
 
@@ -510,7 +499,11 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
         }
       }
     } catch (e) {
-      print('Error recording user action: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Action failed')));
+      }
     }
   }
 
@@ -579,7 +572,6 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
         ),
       );
     } catch (e) {
-      print('Error decoding base64 image: $e');
       return Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -660,7 +652,6 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
         children: [
           Scaffold(
             backgroundColor: const Color(0xFFFAFAFA),
-
             body: _selectedIndex == 0
                 ? _buildDiscoverPage(screenWidth, screenHeight)
                 : _buildOtherPages(),
@@ -702,7 +693,6 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
                     activeIcon: Icon(Icons.favorite, size: screenWidth * 0.06),
                     label: 'Matches',
                   ),
-
                   BottomNavigationBarItem(
                     icon: Icon(Icons.person_outline, size: screenWidth * 0.06),
                     activeIcon: Icon(Icons.person, size: screenWidth * 0.06),
@@ -719,7 +709,6 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
     );
   }
 
-  // Responsive Discover Page
   Widget _buildDiscoverPage(double screenWidth, double screenHeight) {
     if (_isLoading) {
       return Center(
@@ -774,48 +763,21 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
                 ),
               ),
               SizedBox(height: screenHeight * 0.03),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  ElevatedButton(
-                    onPressed: _loadRecommendedUsers,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFFF4458),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(25),
-                      ),
-                    ),
-                    child: Text(
-                      'Try Again',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: screenWidth * 0.04,
-                      ),
-                    ),
+              ElevatedButton(
+                onPressed: _loadRecommendedUsers,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFF4458),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(25),
                   ),
-                  SizedBox(width: screenWidth * 0.03),
-                  OutlinedButton(
-                    onPressed: () {
-                      _recommendationService.createTestUsers();
-                    },
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(
-                        color: Color(0xFFFF4458),
-                        width: 1,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(25),
-                      ),
-                    ),
-                    child: Text(
-                      'Create Test Data',
-                      style: TextStyle(
-                        color: const Color(0xFFFF4458),
-                        fontSize: screenWidth * 0.04,
-                      ),
-                    ),
+                ),
+                child: Text(
+                  'Try Again',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: screenWidth * 0.04,
                   ),
-                ],
+                ),
               ),
             ],
           ),
@@ -1291,7 +1253,6 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
     switch (_selectedIndex) {
       case 1:
         return 'Matches';
-
       case 2:
         return 'Profile';
       default:
@@ -1319,11 +1280,9 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Profile pictures section
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Current user picture
                       Container(
                         width: 80,
                         height: 80,
@@ -1352,7 +1311,6 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
                         ),
                       ),
                       const SizedBox(width: 20),
-                      // Heart icon
                       Container(
                         width: 50,
                         height: 50,
@@ -1367,7 +1325,6 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
                         ),
                       ),
                       const SizedBox(width: 20),
-                      // Matched user picture
                       Container(
                         width: 80,
                         height: 80,
@@ -1398,7 +1355,6 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
                     ],
                   ),
                   const SizedBox(height: 30),
-                  // Title
                   const Text(
                     "It's a Match!",
                     style: TextStyle(
@@ -1408,14 +1364,12 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  // Description
                   Text(
                     'You and $matchedUserName liked each other.',
                     textAlign: TextAlign.center,
                     style: const TextStyle(fontSize: 16, color: Colors.grey),
                   ),
                   const SizedBox(height: 30),
-                  // Buttons
                   Column(
                     children: [
                       SizedBox(
@@ -1428,10 +1382,26 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
                               _matchedUserName = null;
                               _matchedUserProfilePicture = null;
                             });
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const MatchesScreen(),
+                              ),
+                            );
                           },
-
-                          child: const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFF4458),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(25),
+                            ),
+                          ),
+                          child: const Text(
+                            'Start Chatting',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ),
@@ -1449,7 +1419,7 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
                             try {
                               HapticFeedback.lightImpact();
                             } catch (e) {
-                              print('Haptic feedback not available: $e');
+                              // Haptic feedback not available
                             }
                           },
                           style: OutlinedButton.styleFrom(

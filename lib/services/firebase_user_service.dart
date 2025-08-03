@@ -1,6 +1,7 @@
+import 'dart:math' as math;
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'dart:math' as math;
 import '../model/user_action_model.dart';
 import '../model/match_model.dart';
 import 'notification_service.dart';
@@ -28,6 +29,55 @@ class FirebaseUserService {
     }
 
     return age;
+  }
+
+  /// Calculates the distance between two coordinates in kilometers using the Haversine formula.
+  double _calculateDistance(
+    double lat1,
+    double lon1,
+    double lat2,
+    double lon2,
+  ) {
+    const double earthRadius = 6371; // in kilometers
+    final double dLat = _degreesToRadians(lat2 - lat1);
+    final double dLon = _degreesToRadians(lon2 - lon1);
+
+    final double a =
+        (math.sin(dLat / 2) * math.sin(dLat / 2)) +
+        math.cos(_degreesToRadians(lat1)) *
+            math.cos(_degreesToRadians(lat2)) *
+            (math.sin(dLon / 2) * math.sin(dLon / 2));
+    final double c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+    return earthRadius * c;
+  }
+
+  double _degreesToRadians(double degrees) {
+    return degrees * (math.pi / 180);
+  }
+
+  /// Batch operations for multiple users
+  Future<void> batchUpdateUserInterests(
+    List<Map<String, dynamic>> updates,
+  ) async {
+    try {
+      final batch = _firestore.batch();
+
+      for (var update in updates) {
+        final userId = update['userId'] as String?;
+        if (userId == null) continue;
+
+        final docRef = _firestore
+            .collection(USER_INTERESTS_COLLECTION)
+            .doc(userId);
+
+        update['updatedAt'] = FieldValue.serverTimestamp();
+        batch.update(docRef, update);
+      }
+
+      await batch.commit();
+    } catch (e) {
+      throw Exception('Failed to batch update user interests: $e');
+    }
   }
 
   /// Update lastUpdated field on user profile
@@ -422,59 +472,6 @@ class FirebaseUserService {
     }
   }
 
-  /// Calculate distance between two coordinates using Haversine formula
-  double _calculateDistance(
-    double lat1,
-    double lon1,
-    double lat2,
-    double lon2,
-  ) {
-    const double earthRadius = 6371; // Earth's radius in kilometers
-
-    double dLat = _degreesToRadians(lat2 - lat1);
-    double dLon = _degreesToRadians(lon2 - lon1);
-
-    double a =
-        math.sin(dLat / 2) * math.sin(dLat / 2) +
-        math.cos(_degreesToRadians(lat1)) *
-            math.cos(_degreesToRadians(lat2)) *
-            math.sin(dLon / 2) *
-            math.sin(dLon / 2);
-
-    double c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
-
-    return earthRadius * c;
-  }
-
-  double _degreesToRadians(double degrees) {
-    return degrees * (math.pi / 180);
-  }
-
-  /// Batch operations for multiple users
-  Future<void> batchUpdateUserInterests(
-    List<Map<String, dynamic>> updates,
-  ) async {
-    try {
-      final batch = _firestore.batch();
-
-      for (var update in updates) {
-        final userId = update['userId'] as String?;
-        if (userId == null) continue;
-
-        final docRef = _firestore
-            .collection(USER_INTERESTS_COLLECTION)
-            .doc(userId);
-
-        update['updatedAt'] = FieldValue.serverTimestamp();
-        batch.update(docRef, update);
-      }
-
-      await batch.commit();
-    } catch (e) {
-      throw Exception('Failed to batch update user interests: $e');
-    }
-  }
-
   /// Check if two users have mutually liked each other
   Future<bool> checkMutualLike({
     required String currentUserId,
@@ -542,96 +539,6 @@ class FirebaseUserService {
 
     // 5️⃣ Otherwise, no match yet
     return false;
-  }
-
-  /// Check if the other user has already liked current user (deprecated - now handled in transaction)
-  @deprecated
-  Future<bool> _checkForReciprocalLike({
-    required String currentUserId,
-    required String otherUserId,
-  }) async {
-    try {
-      print('Checking for reciprocal like from $otherUserId to $currentUserId');
-
-      // Look for likes from the other user to current user that aren't matched yet
-      final query = await _firestore
-          .collection(USER_ACTIONS_COLLECTION)
-          .where('actorUserId', isEqualTo: otherUserId)
-          .where('targetUserId', isEqualTo: currentUserId)
-          .where('actionType', isEqualTo: 'like')
-          .where('matchStatus', isEqualTo: false)
-          .limit(1)
-          .get();
-
-      final hasReciprocalLike = query.docs.isNotEmpty;
-      print('Reciprocal like exists: $hasReciprocalLike');
-
-      if (hasReciprocalLike) {
-        print('Found reciprocal like: ${query.docs.first.id}');
-      }
-
-      return hasReciprocalLike;
-    } catch (e) {
-      print('Error checking for reciprocal like: $e');
-      return false;
-    }
-  }
-
-  /// Handle match creation between two users (deprecated - now handled in transaction)
-  @deprecated
-  Future<void> _handleMatchCreation(String userA, String userB) async {
-    try {
-      print('Creating match between $userA and $userB');
-
-      // Find both like actions (in either direction)
-      final likeActionsQuery = await _firestore
-          .collection(USER_ACTIONS_COLLECTION)
-          .where('actorUserId', whereIn: [userA, userB])
-          .where('targetUserId', whereIn: [userA, userB])
-          .where('actionType', isEqualTo: 'like')
-          .where('matchStatus', isEqualTo: false)
-          .get();
-
-      if (likeActionsQuery.docs.length < 2) {
-        print('Not enough like actions found for match creation');
-        return;
-      }
-
-      // Use batch for atomic operations
-      final batch = _firestore.batch();
-
-      // Update all found actions to matched status
-      for (final doc in likeActionsQuery.docs) {
-        batch.update(doc.reference, {
-          'matchStatus': true,
-          'matchedAt': FieldValue.serverTimestamp(),
-        });
-      }
-
-      // Create match document
-      final sortedIds = [userA, userB]..sort();
-      final matchId = '${sortedIds[0]}_${sortedIds[1]}';
-      final matchRef = _firestore.collection(MATCHES_COLLECTION).doc(matchId);
-
-      batch.set(matchRef, {
-        'userA': sortedIds[0],
-        'userB': sortedIds[1],
-        'timestamp': FieldValue.serverTimestamp(),
-        'isActive': true,
-      });
-
-      // Execute batch
-      print('Committing match batch...');
-      await batch.commit();
-      print('Match created successfully!');
-
-      // Trigger notification for both users
-      _triggerMatchNotification(userA, userB);
-      _triggerMatchNotification(userB, userA);
-    } catch (e) {
-      print('Error in _handleMatchCreation: $e');
-      rethrow;
-    }
   }
 
   /// Trigger match notification for both users
@@ -814,8 +721,4 @@ class FirebaseUserService {
     // Trigger match notifications for both users
     _triggerMatchNotification(userA, userB);
   }
-}
-
-extension on DocumentSnapshot<Object?> {
-  get docs => null;
 }
