@@ -141,7 +141,7 @@ class _BirthdayScreenState extends State<BirthdayScreen> {
                         ),
                       ),
                   ],
-                  SizedBox(height: screenHeight * 0.10),
+                  SizedBox(height: screenHeight * 0.56),
                   SizedBox(
                     width: double.infinity,
                     height: screenHeight * 0.07,

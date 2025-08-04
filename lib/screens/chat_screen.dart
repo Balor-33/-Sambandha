@@ -31,6 +31,14 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
+
+    // Test encryption/decryption
+    if (EncryptionHelper.testEncryption()) {
+      print('✅ Encryption test PASSED - Ready to use!');
+    } else {
+      print('❌ Encryption test FAILED - Check implementation!');
+    }
+
     _ensureChatExists();
   }
 
@@ -62,9 +70,9 @@ class _ChatScreenState extends State<ChatScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error ensuring chat exists')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error ensuring chat exists: $e')),
+        );
       }
     }
   }
@@ -83,6 +91,9 @@ class _ChatScreenState extends State<ChatScreen> {
 
       // ENCRYPT the message before saving to Firestore
       final encryptedMessage = EncryptionHelper.encryptText(message);
+      print(
+        'Sending encrypted message: ${encryptedMessage.substring(0, 20)}...',
+      );
 
       final messageRef = _firestore
           .collection('chats')
@@ -105,6 +116,7 @@ class _ChatScreenState extends State<ChatScreen> {
       });
 
       await batch.commit();
+      print('Message sent successfully');
 
       // Auto-scroll to bottom after sending
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -117,6 +129,7 @@ class _ChatScreenState extends State<ChatScreen> {
         }
       });
     } catch (e) {
+      print('Failed to send message: $e');
       if (mounted) {
         ScaffoldMessenger.of(
           context,
@@ -214,7 +227,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           color: Colors.red,
                         ),
                         SizedBox(height: screenHeight * 0.02),
-                        Text('Error loading messages'),
+                        Text('Error loading messages: ${snapshot.error}'),
                         SizedBox(height: screenHeight * 0.02),
                         ElevatedButton(
                           onPressed: () => setState(() {}),
@@ -297,9 +310,15 @@ class _ChatScreenState extends State<ChatScreen> {
                     // DECRYPT the message text for display
                     String decryptedText = '';
                     try {
-                      decryptedText = EncryptionHelper.decryptText(
-                        message['text'] ?? '',
-                      );
+                      final encryptedMessage = message['text'] ?? '';
+                      if (encryptedMessage.isEmpty) {
+                        decryptedText = '[Empty message]';
+                      } else {
+                        decryptedText = EncryptionHelper.decryptText(
+                          encryptedMessage,
+                        );
+                        print('Decrypted message: $decryptedText');
+                      }
                     } catch (e) {
                       print('Error decrypting message: $e');
                       decryptedText = '[Unable to decrypt message]';
