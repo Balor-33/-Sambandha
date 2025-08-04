@@ -1,0 +1,54 @@
+name: Sambandha
+description: "A Dating App"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.8.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  firebase_core: ^3.13.1
+  firebase_auth: ^5.5.4
+  intl: ^0.20.2
+  google_fonts: ^6.1.0
+  cloud_firestore: ^5.6.11
+  location: ^5.0.0
+  permission_handler: ^11.0.0
+  image_picker: ^1.0.4
+  shared_preferences: ^2.2.2
+  firebase_messaging: ^15.2.9
+  flutter_local_notifications: ^17.2.3
+  http: ^1.1.0
+  encrypt: ^5.0.1
+  pointycastle: ^3.7.3
+
+dev_dependencies:
+  flutter_launcher_icons: ^0.13.1
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/images/logo.png
+    - assets/images/icon.png
+
+# Flutter launcher icons configuration
+flutter_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/images/icon.png"
+  min_sdk_android: 21
+  web:
+    generate: true
+    image_path: "assets/images/icon.png"
+  windows:
+    generate: true
+    image_path: "assets/images/icon.png"
+    icon_size: 48
