@@ -72,61 +72,47 @@ class WelcomePage extends StatelessWidget {
                       ),
                     ),
                     child: const Text(
-                      'Create Account',
+                      'Get Started',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(height: screenHeight * 0.02),
-                SizedBox(
-                  width: double.infinity,
-                  height: screenHeight * 0.07,
-                  child: OutlinedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const LoginPage(),
-                        ),
-                      );
-                    },
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Colors.black),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: const Text(
-                      'Log In',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black,
                       ),
                     ),
                   ),
                 ),
                 SizedBox(height: screenHeight * 0.03),
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Expanded(child: Divider(color: Colors.grey[300])),
-                    Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: screenWidth * 0.04,
-                      ),
-                      child: Text(
-                        'or',
-                        style: TextStyle(color: Colors.grey[500], fontSize: 14),
+                    Text(
+                      'Already have an account? ',
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 14,
                       ),
                     ),
-                    Expanded(child: Divider(color: Colors.grey[300])),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const LoginPage(),
+                          ),
+                        );
+                      },
+                      child: const Text(
+                        'Log in',
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
                 SizedBox(height: screenHeight * 0.03),
-                SizedBox(height: screenHeight * 0.05),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -157,6 +143,7 @@ class WelcomePage extends StatelessWidget {
   );
 }
 
+// Keep the LoginPage and ForgotPasswordPage classes unchanged
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
